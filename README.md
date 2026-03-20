@@ -2,6 +2,8 @@
 
 A CLI budgeting app that integrates the best features from all existing competitors
 
+---
+
 ## Key Features
 
 ### Transaction Input & Management
@@ -24,6 +26,35 @@ A CLI budgeting app that integrates the best features from all existing competit
 - Handle one-time irregular expenses without affecting the reports
 - Take peer adjustments into account, such as shared rent and paying each other back
 
+---
+
+## 📁 Project Structure
+
+'''
+Personal-Budgeting-App---COMP1110-Project-Grp10/
+│
+├── main.py                 # entry point
+├── cli.py                  # CLI logic
+├── data/
+│   └── transactions.csv    # Test sample
+│
+├── core/
+│   ├── transaction.py      # Transaction input & management
+│   ├── adjustments.py      # Peer-to-peer & irregular expenses handling
+│   ├── graph.py            # Data analysis
+│   ├── alrets.py           # Rule-based alerts
+│   └── utils.py            # Other functions
+│
+│
+├── tests/                  # Test programs
+│
+├── README.md               
+└── requirements.txt        # Record dependencies
+
+'''
+
+---
+
 ## Installation
 
 ### Prerequisites
@@ -41,4 +72,8 @@ venv\Scripts\activate      # On Windows
 
 # Install dependencies
 pip install -r requirements.txt
+
+# If error occured when pip installing the entire file
+# Try intalling the dependencies individually
+
 ```
