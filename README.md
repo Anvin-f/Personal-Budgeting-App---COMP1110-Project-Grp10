@@ -50,7 +50,6 @@ Personal-Budgeting-App---COMP1110-Project-Grp10/
 │
 ├── README.md               
 └── requirements.txt        # Record dependencies
-
 '''
 
 ---
