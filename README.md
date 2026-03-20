@@ -30,7 +30,7 @@ A CLI budgeting app that integrates the best features from all existing competit
 
 ## 📁 Project Structure
 
-'''
+```
 Personal-Budgeting-App---COMP1110-Project-Grp10/
 │
 ├── main.py                 # entry point
@@ -50,7 +50,7 @@ Personal-Budgeting-App---COMP1110-Project-Grp10/
 │
 ├── README.md               
 └── requirements.txt        # Record dependencies
-'''
+```
 
 ---
 
