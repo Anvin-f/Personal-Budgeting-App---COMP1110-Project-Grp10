@@ -41,7 +41,7 @@ Personal-Budgeting-App---COMP1110-Project-Grp10/
 ├── core/
 │   ├── transaction.py      # Transaction input & management
 │   ├── adjustments.py      # Peer-to-peer & irregular expenses handling
-│   ├── graph.py            # Data analysis
+│   ├── analysis.py         # Data analysis
 │   ├── alrets.py           # Rule-based alerts
 │   └── utils.py            # Other functions
 │
