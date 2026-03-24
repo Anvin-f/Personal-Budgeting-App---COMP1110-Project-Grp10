@@ -9,6 +9,7 @@ delete-transaction: Delete a transaction
 list-transactions: List all transactions
 show-summary: Show expense summary
 show-graph: Visualize expenses 
+reset-data: Clear all transaction history
 quit: quit application
 """
 
@@ -26,6 +27,8 @@ def main():
             cli.show_summary()
         elif cli_command == "show-graph":
             cli.show_graph()
+        elif cli_command == "reset-data":
+            cli.reset_data()
         else:
             print(help_message)
 

@@ -28,32 +28,6 @@ A CLI budgeting app that integrates the best features from all existing competit
 
 ---
 
-## 📁 Project Structure
-
-```
-Personal-Budgeting-App---COMP1110-Project-Grp10/
-│
-├── main.py                 # entry point
-├── cli.py                  # CLI logic
-├── data/
-│   └── transactions.csv    # Test sample
-│
-├── core/
-│   ├── transaction.py      # Transaction input & management
-│   ├── adjustments.py      # Peer-to-peer & irregular expenses handling
-│   ├── analysis.py         # Data analysis
-│   ├── alrets.py           # Rule-based alerts
-│   └── utils.py            # Other functions
-│
-│
-├── tests/                  # Test programs
-│
-├── README.md               
-└── requirements.txt        # Record dependencies
-```
-
----
-
 ## Installation
 
 ### Prerequisites
@@ -76,3 +50,53 @@ pip install -r requirements.txt
 # Try intalling the dependencies individually
 
 ```
+
+---
+
+## Project Structure
+
+```
+Personal-Budgeting-App---COMP1110-Project-Grp10/
+│
+├── main.py                 # entry point
+├── cli.py                  # CLI logic
+├── data/
+│   ├── assignment.csv      # record of assignment of tags to transactions
+│   ├── tags.csv            # tag information
+│   └── transactions.csv    # transaction history        
+│
+├── core/
+│   ├── transaction.py      # Transaction input & management
+│   ├── adjustments.py      # Peer-to-peer & irregular expenses handling
+│   ├── analysis.py         # Data analysis
+│   ├── alrets.py           # Rule-based alerts
+│   └── utils.py            # Other functions
+│
+│
+├── tests/                  # Test programs
+│
+├── README.md               
+└── requirements.txt        # Record dependencies
+```
+
+---
+
+## Database Structure
+All transaction history are stored in csv files
+
+### Database Schema
+
+| Table Name | Column Name | Data Type | Description |
+| :--- | :--- | :--- | :--- |
+| `transactions` | `ID` | `int` | Primary Key |
+| `transactions` | `Date` | `string` | Date of transaction |
+| `transactions` | `Name` | `string` | Transaction name |
+| `transactions` | `Description` | `string` | Addtional information of transaction |
+| `transactions` | `Amount` | `decimal` | Transaction amount |
+| `tags` | `TagID` | `int` | Primary Key |
+| `tags` | `Name` | `string` | Name of tag |
+| `tags` | `Description` | `string` | Tag Description |
+| `assignment` | `ID` | `int` | Foriegn key of transactions |
+| `assignment` | `TagID` | `int` | Foriegn key of tags |
+
+---
