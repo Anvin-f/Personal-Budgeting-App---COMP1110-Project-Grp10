@@ -27,6 +27,12 @@ def main():
             cli.show_summary()
         elif cli_command == "show-graph":
             cli.show_graph()
+        elif cli_command == "add-tag":
+            cli.show_graph()
+        elif cli_command == "delete-tag":
+            cli.show_graph()
+        elif cli_command == "list-tags":
+            cli.show_graph()
         elif cli_command == "reset-data":
             cli.reset_data()
         else:

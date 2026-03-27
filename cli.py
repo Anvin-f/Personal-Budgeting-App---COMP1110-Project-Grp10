@@ -1,6 +1,7 @@
 import core.transaction as transaction
 import core.analysis as analysis
 import core.utils as utils
+import core.tags as tags
 
 #have to support csv and manual input
 def add_transaction():
@@ -26,4 +27,16 @@ def show_graph():
 
 def reset_data():
     utils.reset_data()
+    return
+
+def add_tag():
+    tags.add_tag()
+    return
+
+def delete_tag():
+    tags.delete_tag()
+    return
+
+def list_tags():
+    tags.list_tags()
     return
