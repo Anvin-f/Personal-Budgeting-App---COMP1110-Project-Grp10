@@ -1,1 +1,5 @@
-TagID, Name, Description
+TagID,Tag Name,Tag Description
+1,Bills,"Fixed regular payments e.g. rent, utilities"
+2,Needs,"Essential daily expenses e.g. food, transport"
+3,Wants,"Non-essential spending e.g. dining out, hobbies"
+4,Uncategorized,"Not yet categorised"

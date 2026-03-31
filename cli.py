@@ -1,13 +1,14 @@
 import core.transaction as transaction
 import core.analysis as analysis
 import core.utils as utils
+import core.tags as tags
 
 #have to support csv and manual input
 def add_transaction():
-    print("How would you like to add a transaction?")
+    print(f"\nHow would you like to add a transaction?\n")
     print("1. Manual input")
     print("2. Input from a CSV file")
-    choice = input("Enter your choice (1 or 2): ")
+    choice = input("\nEnter your choice (1 or 2): ")
 
     if choice == '1':
         transaction.add_transaction()
@@ -36,4 +37,20 @@ def show_graph():
 
 def reset_data():
     utils.reset_data()
+    return
+
+def add_tag():
+    tags.add_tag()
+    return
+
+def delete_tag():
+    tags.delete_tag()
+    return
+
+def list_tags():
+    tags.list_tags()
+    return
+
+def edit_tags():
+    tags.edit_tags()
     return
