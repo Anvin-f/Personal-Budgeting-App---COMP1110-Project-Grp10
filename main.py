@@ -37,8 +37,6 @@ def main():
             cli.delete_tag()
         elif cli_command == "list-tags":
             cli.list_tags()
-        elif cli_command == "edit-tags":
-            cli.edit_tags()
         elif cli_command == "reset-data":
             cli.reset_data()
         else:

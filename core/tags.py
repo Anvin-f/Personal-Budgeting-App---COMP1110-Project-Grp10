@@ -1,4 +1,6 @@
 import core.transaction as transaction
+import csv
+import utils
 
 def _validate_tag_name(name, tags, exclude_id=None):
    
@@ -10,113 +12,41 @@ def _validate_tag_name(name, tags, exclude_id=None):
             return False
     return True
 
-#----------------------------------------------------------------
+csvpath = 'data/tags.csv'
+
+def get_next_tag_id(tags_dict):
+    max_id = max(int(tag['Tag_id']) for tag in tags_dict.values())
+    return str(max_id + 1)
+
+
+def read_tag_csv():
+     tagDic = {}
+     with open(csvpath, mode ='r')as file:
+        csvFile = csv.DictReader(file)
+        for i in csvFile:
+            tagDic[i["Tag_id"]] = i
+     return tagDic
+
+def write_tag_csv(tagDic):
+    sorted_tags = sorted(tagDic.values(), key=lambda x: int(x['Tag_id']))
+    with open(csvpath, mode="w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=["Tag_id", "Tag_type", "Tag_name"])
+        writer.writeheader()
+        writer.writerows(sorted_tags)
 
 def add_tag():
+    tagDic = read_tag_csv()
+    id = get_next_tag_id(tagDic)
+    tagDic[id] = {"Tag_id": id, "Tag_type":input("Tag_type:"), "Tag_name":input("Tag_name:")}
+    write_tag_csv(tagDic)
 
-    print("\n---Add a new tag---")
-    tags = transaction._load_tags()
-
-    while True:
-        name = input("Tag name: ").strip()
-        if not name:
-            print("[Error] Tag name cannot be empty.")
-            continue
-        if not _validate_tag_name(name, tags):
-            print(f"[Error] Tag '{name}' already exists.")
-            continue
-        break
-        
-    description = input("Tag Description (optional, press Enter to skip): ").strip()
-
-    new_tagid = transaction._get_next_tag_id(tags)
-    new_tag = {
-        "TagID": new_tagid,
-        "Tag Name": name,
-        "Tag Description": description    }
-    tags.append(new_tag)
-    transaction._save_tags(tags)
-    print(f"[Success] Tag '{name}' (ID {new_tagid}) created.")
-
-    return
-
-def delete_tag():
-
-    print("\n---Delete a tag---")
-    transaction._list_all_tags()
-    tags = transaction._load_tags()
-
-    if not tags:
-        return
-
-    tag_id_input = input("Enter TagID to delete (or 'cancel'): ").strip()
-    if tag_id_input.lower() == "cancel":
-        return
-    
-    tag = next((t for t in tags if t["TagID"] == tag_id_input), None)
-    if not tag:
-        print(f"[Error] No tag with ID '{tag_id_input}'.")
-        return
-    
-    #confirm deletion
-    confirm = input(f"Delete tag '{tag['Tag Name']}'? This will remove it from all transactions. (yes/no): ").strip().lower()
-    if confirm != "yes":
-        print("Deletion cancelled.")
-        return
-    
-    #remove tag
-    tags = [t for t in tags if t["TagID"] != tag_id_input]
-    transaction._save_tags(tags)
-
-    #remove assignments for this tag
-    assignments = transaction._load_assignments()
-    assignments = [a for a in assignments if a["TagID"] != tag_id_input]
-    transaction._save_assignments(assignments)
-
-    print(f"[Success] Tag '{tag['Tag Name']}' (ID {tag_id_input}) deleted.")
-
-    return
+def delete_tag(tag_id):
+    write_tag_csv(read_tag_csv().pop(tag_id))
 
 def list_tags():
-    print("\n---List of Tags---")
-    transaction._list_all_tags()
-    return
+    with open(csvpath, mode ='r')as file:
+        for i in csv.reader(file):
+            print(i)
 
-def edit_tags():
-    print("\n---Edit a tag---")
-    transaction._list_all_tags()
-    tags = transaction._load_tags()
-
-    if not tags:
-        return
-
-    tag_id_input = input("Enter TagID to edit (or 'cancel'): ").strip()
-
-    if tag_id_input.lower() == "cancel":
-        return
-    
-    tag = next((t for t in tags if t["TagID"] == tag_id_input), None)
-    if not tag:
-        print(f"[Error] No tag with ID '{tag_id_input}'.")
-        return
-    
-    print(f"\nCurrent name: {tag['Tag Name']}")
-    print(f"Current description: {tag['Tag Description']}\n")
-
-    new_name = input(f"New name for '{tag['Tag Name']}' (press Enter to keep current): ").strip()
-    new_tag_description = input("New description (press Enter to keep current): ").strip()
-
-    # validate new name 
-    if new_name:
-        if not _validate_tag_name(new_name, tags, exclude_id=tag["TagID"]):
-            print(f"[Error] Tag '{new_name}' already exists.")
-            return
-        tag["Tag Name"] = new_name
-
-    if new_tag_description:
-        tag["Tag Description"] = new_tag_description
-
-    transaction._save_tags(tags)
-    print(f"[Success] Tag '{tag['Tag Name']}' (ID {tag_id_input}) updated.")
-
-    return
+def get_tags(tag_id):
+    return read_tag_csv()[tag_id]
