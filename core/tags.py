@@ -1,5 +1,16 @@
+import core.transaction as transaction
 import csv
 import utils
+
+def _validate_tag_name(name, tags, exclude_id=None):
+   
+    name_lower = name.lower()
+    for t in tags:
+        if t["TagID"] == exclude_id:
+            continue
+        if t["Tag Name"].lower() == name_lower:
+            return False
+    return True
 
 csvpath = 'data/tags.csv'
 

@@ -10,6 +10,10 @@ list-transactions: List all transactions
 show-summary: Show expense summary
 show-graph: Visualize expenses 
 reset-data: Clear all transaction history
+add-tag: Add a new tag
+delete-tag: Delete a tag
+list-tags: List all tags
+edit-tags: Edit a tag
 quit: quit application
 """
 
