@@ -10,6 +10,10 @@ list-transactions: List all transactions
 show-summary: Show expense summary
 show-graph: Visualize expenses 
 reset-data: Clear all transaction history
+add-tag: Add a new tag
+delete-tag: Delete a tag
+list-tags: List all tags
+edit-tags: Edit a tag
 quit: quit application
 """
 
@@ -28,11 +32,11 @@ def main():
         elif cli_command == "show-graph":
             cli.show_graph()
         elif cli_command == "add-tag":
-            cli.show_graph()
+            cli.add_tag()
         elif cli_command == "delete-tag":
-            cli.show_graph()
+            cli.delete_tag()
         elif cli_command == "list-tags":
-            cli.show_graph()
+            cli.list_tags()
         elif cli_command == "reset-data":
             cli.reset_data()
         else:
