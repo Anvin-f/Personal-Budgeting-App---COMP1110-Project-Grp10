@@ -8,7 +8,7 @@ TAGS_FILE         = "data/tags.csv"
 ASSIGNMENT_FILE   = "data/assignment.csv"
 
 TRANSACTION_FIELDS = ["ID", "Date", "Name", "Transaction Description", "Amount"]
-TAG_FIELDS        = ["TagID", "Tag Name", "Tag Description"]
+TAG_FIELDS        = ["TagID", "Tag_Type", "Tag_Name"]
 ASSIGNMENT_FIELDS = ["ID", "TagID"]
 
 # --------------------------------------------------------------
@@ -99,7 +99,7 @@ def _list_all_tags():
     else:
         print("Avalibale Tags:")
         for tag in tags:
-            print(f"{tag['TagID']}. {tag['Tag Name']} - {tag['Tag Description']}")
+            print(f"{tag['TagID']}. {tag['Tag_Type']} - {tag['Tag_Name']}")
 
 def _get_next_transaction_id(transactions):
     if not transactions:
@@ -197,8 +197,8 @@ def _assign_tags_to_transaction(transaction_id, tags):
             
             assignments.append({"ID": transaction_id, "TagID": tag_id})
             assigned_count += 1
-            assigned_tags.append(matching[0]["Tag Name"])
-            print(f"  [Success] Assigned tag '{matching[0]['Tag Name']}' to transaction #{transaction_id}.")
+            assigned_tags.append(matching[0]["Tag_Type"])
+            print(f"  [Success] Assigned tag '{matching[0]['Tag_Type']}' to transaction #{transaction_id}.")
 
         if assigned_count > 0:
             _save_assignments(assignments)
@@ -209,11 +209,11 @@ def _assign_tags_to_transaction(transaction_id, tags):
 
 def add_transaction_from_csv():
     print("\n---Import Transactions from CSV File---")
-    print(f'Please ensure your CSV file has the following columns:\n "Date", "Name", "Transaction Description (optional)", "Amount", "Tag Name(optional, separated by ";")"\n')
+    print(f'Please ensure your CSV file has the following columns:\n "Date", "Name", "Transaction Description (optional)", "Amount", "Tag_Type(optional, separated by ";")"\n')
     print(f'[Note] Separate multiple tags with semicolons, e.g. "Bills;Needs"\n')
-    print(f'[Example CSV Format]\nDate,Name,Transaction Description,Amount,Tag Name\n2026-01-01,Groceries,Weekly grocery shopping,150.00,Bills;Needs\n2026-01-02,Coffee,,4.50,Needs\n')
+    print(f'[Example CSV Format]\nDate,Name,Transaction Description,Amount,Tag_Type\n2026-01-01,Groceries,Weekly grocery shopping,150.00,Bills;Needs\n2026-01-02,Coffee,,4.50,Needs\n')
     print(f'[Info] Transactions will be tagged if the tag name already exists. New tags will be created for any non-existing tag names in the CSV.\n')
-    print(f'[Info] After importing, you can edit Tag Names and Tag Descriptions in the "Edit Tags" section of the main menu.\n')
+    print(f'[Info] After importing, you can edit Tag Types and Tag Names in the "Edit Tags" section of the main menu.\n')
     
     file_path = input("Enter the path to your CSV file: ").strip()
     if not os.path.isfile(file_path):
@@ -238,7 +238,7 @@ def add_transaction_from_csv():
                 name = row.get("Name", "").strip()
                 transaction_description = row.get("Transaction Description", "").strip()
                 amount = row.get("Amount", "").strip()
-                tags = row.get("Tag Name", "").strip()
+                tags = row.get("Tag_Type", "").strip()
 
                 if not _validate_date(date):
                     print(f"[Error] Skipping line {line_num} with invalid date: {date}")
@@ -262,7 +262,7 @@ def add_transaction_from_csv():
                     "Name": name,
                     "Transaction Description": transaction_description,
                     "Amount": amount,
-                    "Tag Name": tag_names,
+                    "Tag_Type": tag_names,
                     
                 })
 
@@ -278,7 +278,7 @@ def add_transaction_from_csv():
     next_transaction_id = _get_next_transaction_id(transactions)
     
     for row in imported_rows:
-        tags_name = row.pop("Tag Name")
+        tags_name = row.pop("Tag_Type")
         row["ID"] = next_transaction_id
         transactions.append(row)
 
@@ -293,14 +293,14 @@ def add_transaction_from_csv():
 def _link_tags_by_name(transaction_id, tag_names):
     all_tags = _load_tags()
     assignments = _load_assignments() or []
-    name_to_id = {t["Tag Name"]: t["TagID"] for t in all_tags}
+    name_to_id = {t["Tag_Type"]: t["TagID"] for t in all_tags}
     num_of_tags_added = 0
 
     for tag_name in tag_names:
         tag_id = name_to_id.get(tag_name.lower())
         if tag_id is None:
             tag_id = _get_next_tag_id(all_tags)
-            new_tag = {"TagID": tag_id, "Tag Name": tag_name, "Tag Description": ""}
+            new_tag = {"TagID": tag_id, "Tag_Type": tag_name, "Tag_Name": ""}
             all_tags.append(new_tag)
             name_to_id[tag_name.lower()] = tag_id
             print(f"  [Info] Created new tag '{tag_name}' with ID {tag_id}.")
@@ -364,5 +364,4 @@ def list_transactions(): #list all transactions
             print(f"{transaction['ID']}. {transaction['Name']} ,{transaction['Transaction Description']}- {transaction['Amount']}")
 
 
-    #list transactions by date, name, amount, tag, etc. (allow sorting and filtering) ??
 
