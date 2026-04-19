@@ -2,6 +2,7 @@ import core.transaction as transaction
 import core.analysis as analysis
 import core.utils as utils
 import core.tags as tags
+import core.alerts as alerts
 
 #have to support csv and manual input
 def add_transaction():
@@ -53,4 +54,24 @@ def list_tags():
 
 def edit_tags():
     tags.edit_tags()
+    return
+
+#alerts
+
+def check_alerts():
+    alerts.check_all_alerts()
+
+def add_budget():
+    alerts.add_budget()
+
+def list_budgets():
+    alerts.list_budgets()
+
+def delete_budget():
+    alerts.delete_budget()
+
+# Modify the existing show_summary to also show alerts:
+def show_summary():
+    analysis.show_summary()
+    alerts.check_all_alerts()
     return
