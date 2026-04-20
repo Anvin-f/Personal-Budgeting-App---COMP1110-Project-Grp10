@@ -29,11 +29,11 @@ def definetag() :
     
     return tags, tag_type, tag_name
 
-def printspend(tag_name, category, total_spend, id) :
-    print(f'{id}BREAKDOWN:\n')
-    print(f'{id} total spending: {total_spend}\n')
+def printspend(tag_name, category, total_spend, ids) :
+    print(f'{ids}BREAKDOWN:\n')
+    print(f'{ids} total spending: {total_spend}\n')
 
-    print(f'{id} Category Breakdown:')
+    print(f'{ids} Category Breakdown:')
     for i in category :
         print(f'{tag_name[i]}: {category[i]}')
     
@@ -42,9 +42,8 @@ def printspend(tag_name, category, total_spend, id) :
 def printtop3(tag_name, category) :
     print("\nTop 3 Categories Spent:")
     fre = 0
-    for i in category :
-        fre += 1
-        print(f'{tag_name[i]}: {category[i]}')
+    for tag_id, amount in category:
+        print(f'{tag_name[tag_id]}: {amount}')
 
         if(fre == 3) :
             break 
@@ -73,7 +72,7 @@ def show_summary():
             transaction_id = int(line_split[0])
             transaction_date = datetime.strptime(line_split[1], "%Y-%m-%d")
             transaction_name = line_split[2]
-            transaction_amount = int(line_split[4])
+            transaction_amount = float(line_split[4])
 
             # included in month or not
             if(today.month == transaction_date.month and today.year == transaction_date.year) :
@@ -115,7 +114,7 @@ def line_graph(category_month) :
     amounts = list(category_month.values())
 
     plt.clf() 
-    plt.bar(categories, amounts, color='skyblue', edgecolor='navy')
+    plt.line(categories, amounts, color='skyblue', edgecolor='navy')
 
     plt.xlabel('Category', fontsize=12)
     plt.ylabel('Amount Spent ($)', fontsize=12)
@@ -163,17 +162,16 @@ def show_graph():
             transaction_id = int(line_split[0])
             transaction_date = datetime.strptime(line_split[1], "%Y-%m-%d")
             transaction_name = line_split[2]
-            transaction_amount = int(line_split[4])
+            transaction_amount = float(line_split[4])
 
             # included in month or not
             if(today.month == transaction_date.month and today.year == transaction_date.year) :
-                total_spend_month += transaction_amount
                 if(tag_name[tag_link[transaction_id]] not in category_month) :
                     category_month[tag_name[tag_link[transaction_id]]] = transaction_amount
                 else :
                     category_month[tag_name[tag_link[transaction_id]]] += transaction_amount
             
-            if(transaction_date > thirtyday_cutoff):
+            if(transaction_date >= thirtyday_cutoff):
                 if(transaction_date not in spending_per_day) :
                     spending_per_day[transaction_date] = transaction_amount
                 else :
@@ -183,3 +181,4 @@ def show_graph():
     bar_graph(spending_per_day)
     
     return
+

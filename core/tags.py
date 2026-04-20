@@ -1,6 +1,5 @@
 import core.transaction as transaction
 import csv
-import utils
 
 def _validate_tag_name(name, tags, exclude_id=None):
    
@@ -28,6 +27,7 @@ def read_tag_csv():
      return tagDic
 
 def write_tag_csv(tagDic):
+    print(tagDic)
     sorted_tags = sorted(tagDic.values(), key=lambda x: int(x['Tag_id']))
     with open(csvpath, mode="w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=["Tag_id", "Tag_type", "Tag_name"])
@@ -40,8 +40,14 @@ def add_tag():
     tagDic[id] = {"Tag_id": id, "Tag_type":input("Tag_type:"), "Tag_name":input("Tag_name:")}
     write_tag_csv(tagDic)
 
-def delete_tag(tag_id):
-    write_tag_csv(read_tag_csv().pop(tag_id))
+def delete_tag():
+    list_tags()
+    id_delete_tag(input("Enter tag ID to delete: "))
+
+def id_delete_tag(tag_id):
+    d= read_tag_csv()
+    del d[tag_id]
+    write_tag_csv(d)
 
 def list_tags():
     with open(csvpath, mode ='r')as file:

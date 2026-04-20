@@ -7,13 +7,17 @@ Commands:
 add-transaction: Add a new transaction or input csv file
 delete-transaction: Delete a transaction
 list-transactions: List all transactions
-show-summary: Show expense summary
-show-graph: Visualize expenses 
+show-summary: Show expense summary (includes alerts)
+show-graph: Visualize expenses
 reset-data: Clear all transaction history
 add-tag: Add a new tag
 delete-tag: Delete a tag
 list-tags: List all tags
 edit-tags: Edit a tag
+check-alerts: Run all rule-based alerts
+add-budget: Set or update a monthly budget for a tag
+list-budgets: List all budgets
+delete-budget: Delete a budget
 quit: quit application
 """
 
@@ -39,6 +43,14 @@ def main():
             cli.list_tags()
         elif cli_command == "reset-data":
             cli.reset_data()
+        elif cli_command == "check-alerts":
+            cli.check_alerts()
+        elif cli_command == "add-budget":
+            cli.add_budget()
+        elif cli_command == "list-budgets":
+            cli.list_budgets()
+        elif cli_command == "delete-budget":
+            cli.delete_budget()
         else:
             print(help_message)
 
