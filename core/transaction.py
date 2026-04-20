@@ -239,12 +239,12 @@ def add_transaction_from_csv():
             
             for line_num, row in enumerate(reader, start=2):
 
-                date = row.get("Date" or "").strip()
-                name = row.get("Name" or "").strip()
-                transaction_description = row.get("Transaction Description" or "").strip()
-                amount = row.get("Amount" or "").strip()
-                tag_type = row.get("Tag_type" or "").strip()
-                tag_name = row.get("Tag_name" or "").strip()
+                date = (row.get("Date") or "").strip()
+                name = (row.get("Name") or "").strip()
+                transaction_description = (row.get("Transaction Description") or "").strip()
+                amount = (row.get("Amount") or "").strip()
+                tag_type = (row.get("Tag_type") or "").strip()
+                tag_name = (row.get("Tag_name") or "").strip()
 
                 if not _validate_date(date):
                     print(f"[Error] Skipping line {line_num} with invalid date: {date}")
