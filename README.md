@@ -1,6 +1,6 @@
 # Personal-Budgeting-App---COMP1110-Project-Grp10
 
-A CLI budgeting app that integrates the best features from all existing competitors
+A personal budgeting app with a Tkinter GUI for managing transactions, tags, budgets, and spending analysis.
 
 ---
 
@@ -51,6 +51,14 @@ pip install -r requirements.txt
 
 ```
 
+### Run The App
+
+```bash
+python main.py
+```
+
+`gui.py` remains available as a backward-compatible GUI entrypoint.
+
 ---
 
 ## Project Structure
@@ -58,8 +66,19 @@ pip install -r requirements.txt
 ```
 Personal-Budgeting-App---COMP1110-Project-Grp10/
 │
-├── main.py                 # entry point
-├── cli.py                  # CLI logic
+├── main.py                 # GUI entry point
+├── gui.py                  # Backward-compatible GUI wrapper
+├── gui_app/                # GUI package split by feature
+│   ├── app.py              # Main window and navigation
+│   ├── base.py             # Shared page base class
+│   ├── constants.py        # Shared theme and fonts
+│   ├── helpers.py          # Shared Tkinter helper functions
+│   └── pages/
+│       ├── dashboard.py    # Dashboard page
+│       ├── transactions.py # Transactions page and dialog
+│       ├── tags.py         # Tags page and dialog
+│       ├── budget.py       # Budgets page and dialog
+│       └── analysis.py     # Analysis page
 ├── data/
 │   ├── assignment.csv      # record of assignment of tags to transactions
 │   ├── tags.csv            # tag information
@@ -68,8 +87,8 @@ Personal-Budgeting-App---COMP1110-Project-Grp10/
 ├── core/
 │   ├── transaction.py      # Transaction input & management
 │   ├── adjustments.py      # Peer-to-peer & irregular expenses handling
-│   ├── analysis.py         # Data analysis
-│   ├── alrets.py           # Rule-based alerts
+│   ├── analysis.py         # Data analysis helpers
+│   ├── alerts.py           # Rule-based alerts
 │   └── utils.py            # Other functions
 │
 │
