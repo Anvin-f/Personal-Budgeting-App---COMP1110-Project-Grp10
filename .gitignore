@@ -1,1 +1,7 @@
 
+main.py
+core/__pycache__/alerts.cpython-313.pyc
+.gitignore
+core/__pycache__/transaction.cpython-313.pyc
+__pycache__/gui.cpython-313.pyc
+core/__pycache__/tags.cpython-313.pyc
