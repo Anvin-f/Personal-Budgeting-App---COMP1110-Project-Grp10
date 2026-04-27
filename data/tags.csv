@@ -4,7 +4,11 @@ Tag_id,Tag_type,Tag_name
 3,Needs,Transport
 4,Bills,Utilities
 5,Bills,Internet
-6,Balance,Peer:Alex
-7,Balance,Peer:Sam
-8,Balance,Peer:Chris
-
+6,Wants,Dining Out
+7,Wants,Shopping
+8,Needs,Healthcare
+9,Irregular,One-time
+10,Balance,Peer:Alex
+11,Balance,Peer:Sam
+12,Balance,Peer:Chris
+13,Balance,Peer:Jordan

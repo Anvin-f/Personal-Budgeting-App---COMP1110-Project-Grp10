@@ -1,15 +1,76 @@
 ID,Date,Name,Transaction Description,Amount
-1,2026-04-01,Supermarket,Weekly groceries,320.50
-2,2026-04-02,MTR,Transport top-up,120.00
-3,2026-04-03,Cafe,Coffee with friend,45.00
-4,2026-04-05,Electricity Bill,Monthly utility payment,780.00
-5,2026-04-07,Movie,Weekend entertainment,110.00
-6,2026-04-10,Restaurant,Dinner out,260.00
-7,2026-04-12,Pharmacy,Health supplies,95.50
-8,2026-04-15,Internet Bill,Home broadband,298.00
-9,2026-04-16,Balance Out - Alex,Shared rent advance,1200.00
-10,2026-04-20,Balance In - Alex,Rent payback partial,400.00
-11,2026-04-18,Balance Out - Sam,Concert ticket paid upfront,680.00
-12,2026-04-22,Balance In - Sam,Ticket reimbursement,680.00
-13,2026-04-23,Balance Out - Chris,Group dinner settlement,360.00
-14,2026-04-26,Balance In - Chris,Dinner payback,150.00
+1,2024-03-05,Supermarket,Weekly groceries,285.00
+2,2024-03-07,MTR,Transport monthly pass,120.00
+3,2024-03-08,Cafe,Coffee meetings,52.00
+4,2024-03-10,Electricity Bill,Monthly utility,750.00
+5,2024-03-12,Movie,Weekend cinema,85.00
+6,2024-03-15,Dental Checkup,One-time dental,800.00
+7,2024-03-20,Restaurant,Dinner celebration,320.00
+8,2024-03-22,Internet Bill,Broadband subscription,298.00
+9,2024-03-28,Grocery Shopping,Weekly supplies,310.00
+10,2024-04-02,Supermarket,Weekly groceries,295.00
+11,2024-04-05,Concert,Live music event,180.00
+12,2024-04-10,Electricity Bill,Monthly utility,760.00
+13,2024-04-12,Clothing,New outfit,450.00
+14,2024-04-18,MTR,Transport top-up,120.00
+15,2024-04-20,Restaurant,Dinner with friends,280.00
+16,2024-04-22,Internet Bill,Broadband subscription,298.00
+17,2024-04-28,Supermarket,Weekly groceries,305.00
+18,2025-02-01,Supermarket,Weekly groceries,300.00
+19,2025-02-05,MTR,Transport top-up,120.00
+20,2025-02-08,Cafe,Coffee and snacks,48.00
+21,2025-02-10,Electricity Bill,Monthly utility,755.00
+22,2025-02-14,Movie,Movie date night,95.00
+23,2025-02-18,Restaurant,Dinner,270.00
+24,2025-02-22,Internet Bill,Broadband subscription,298.00
+25,2025-02-28,Supermarket,Weekly groceries,320.00
+26,2025-03-02,Supermarket,Weekly groceries,310.00
+27,2025-03-05,MTR,Transport monthly pass,120.00
+28,2025-03-08,Gaming,Video game purchase,120.00
+29,2025-03-10,Electricity Bill,Monthly utility,770.00
+30,2025-03-15,Phone Repair,One-time repair,550.00
+31,2025-03-18,Restaurant,Lunch with colleague,195.00
+32,2025-03-22,Internet Bill,Broadband subscription,298.00
+33,2025-03-28,Clothing,Shopping spree,680.00
+34,2026-01-02,Supermarket,Weekly groceries,320.50
+35,2026-01-05,MTR,Transport top-up,120.00
+36,2026-01-08,Cafe,Morning coffee,42.00
+37,2026-01-10,Electricity Bill,Monthly utility,780.00
+38,2026-01-15,Movie,Cinema visit,105.00
+39,2026-01-18,Restaurant,Dinner celebration,310.00
+40,2026-01-22,Internet Bill,Broadband subscription,298.00
+41,2026-01-28,Supermarket,Weekly groceries,305.00
+42,2026-02-01,Supermarket,Weekly groceries,290.00
+43,2026-02-04,MTR,Transport top-up,120.00
+44,2026-02-08,Pharmacy,Medication,125.00
+45,2026-02-10,Electricity Bill,Monthly utility,775.00
+46,2026-02-14,Concert,Live event ticket,200.00
+47,2026-02-18,Restaurant,Dinner with friends,295.00
+48,2026-02-22,Internet Bill,Broadband subscription,298.00
+49,2026-02-28,Supermarket,Weekly groceries,315.00
+50,2026-03-02,Supermarket,Weekly groceries,325.00
+51,2026-03-05,MTR,Monthly transport pass,120.00
+52,2026-03-08,Cafe,Coffee with colleagues,55.00
+53,2026-03-10,Electricity Bill,Monthly utility,780.00
+54,2026-03-12,Gaming,New game release,150.00
+55,2026-03-18,Restaurant,Dinner date,285.00
+56,2026-03-22,Internet Bill,Broadband subscription,298.00
+57,2026-03-28,Supermarket,Weekly groceries,310.00
+58,2026-04-01,Supermarket,Weekly groceries,320.50
+59,2026-04-02,MTR,Transport top-up,120.00
+60,2026-04-03,Cafe,Coffee with friend,45.00
+61,2026-04-05,Electricity Bill,Monthly utility,780.00
+62,2026-04-07,Movie,Weekend entertainment,110.00
+63,2026-04-10,Restaurant,Dinner out,260.00
+64,2026-04-12,Pharmacy,Health supplies,95.50
+65,2026-04-15,Internet Bill,Home broadband,298.00
+66,2026-04-18,Concert Ticket,One-time music event,250.00
+67,2026-04-20,Supermarket,Weekly groceries,305.00
+68,2026-04-16,Balance Out - Alex,Shared rent advance,1200.00
+69,2026-04-20,Balance In - Alex,Rent payback partial,400.00
+70,2026-04-18,Balance Out - Sam,Concert ticket paid upfront,680.00
+71,2026-04-22,Balance In - Sam,Ticket reimbursement,680.00
+72,2026-04-23,Balance Out - Chris,Group dinner settlement,360.00
+73,2026-04-26,Balance In - Chris,Dinner payback,150.00
+74,2026-04-25,Balance Out - Jordan,Trip accommodation,950.00
+75,2026-04-28,Balance In - Jordan,Trip expense split,475.00
