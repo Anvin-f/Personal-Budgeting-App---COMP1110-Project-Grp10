@@ -27,6 +27,93 @@ class TransactionsPage(Page):
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=24, pady=(6, 10))
 
+        search_row = tk.Frame(self, bg=BG)
+        search_row.pack(fill="x", padx=24, pady=(0, 8))
+        tk.Label(
+            search_row,
+            text="Search",
+            bg=BG,
+            fg=TEXT,
+            font=("Helvetica Neue", 10, "bold"),
+        ).pack(side="left", padx=(0, 8))
+
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add("write", lambda *_args: self._apply_search())
+        self.search_entry = tk.Entry(
+            search_row,
+            textvariable=self.search_var,
+            font=FONT,
+            relief="solid",
+            bd=1,
+            highlightthickness=0,
+        )
+        self.search_entry.pack(side="left", fill="x", expand=True, ipady=4)
+
+        button(search_row, "Clear", self._clear_search, "#6b7280").pack(side="left", padx=(8, 8))
+        self._result_count_label = tk.Label(
+            search_row,
+            text="0 shown",
+            bg=BG,
+            fg="#6b7280",
+            font=("Helvetica Neue", 9, "bold"),
+        )
+        self._result_count_label.pack(side="left")
+
+        filter_row = tk.Frame(self, bg=BG)
+        filter_row.pack(fill="x", padx=24, pady=(0, 8))
+
+        self.date_from_var = tk.StringVar()
+        self.date_to_var = tk.StringVar()
+        self.amount_min_var = tk.StringVar()
+        self.amount_max_var = tk.StringVar()
+        self.tag_filter_var = tk.StringVar(value="All Tags")
+
+        for var in (self.date_from_var, self.date_to_var, self.amount_min_var, self.amount_max_var, self.tag_filter_var):
+            var.trace_add("write", lambda *_args: self._apply_search())
+
+        tk.Label(filter_row, text="From", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Entry(filter_row, textvariable=self.date_from_var, font=FONT, width=10, relief="solid", bd=1).pack(
+            side="left", padx=(6, 10), ipady=3
+        )
+
+        tk.Label(filter_row, text="To", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Entry(filter_row, textvariable=self.date_to_var, font=FONT, width=10, relief="solid", bd=1).pack(
+            side="left", padx=(6, 10), ipady=3
+        )
+
+        tk.Label(filter_row, text="Min HK$", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Entry(filter_row, textvariable=self.amount_min_var, font=FONT, width=8, relief="solid", bd=1).pack(
+            side="left", padx=(6, 10), ipady=3
+        )
+
+        tk.Label(filter_row, text="Max HK$", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Entry(filter_row, textvariable=self.amount_max_var, font=FONT, width=8, relief="solid", bd=1).pack(
+            side="left", padx=(6, 10), ipady=3
+        )
+
+        tk.Label(filter_row, text="Tag", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        self.tag_filter_combo = ttk.Combobox(
+            filter_row,
+            textvariable=self.tag_filter_var,
+            values=["All Tags"],
+            state="readonly",
+            width=20,
+            font=FONT,
+        )
+        self.tag_filter_combo.pack(side="left", padx=(6, 0), ipady=3)
+
+        chips_row = tk.Frame(self, bg=BG)
+        chips_row.pack(fill="x", padx=24, pady=(0, 8))
+        tk.Label(
+            chips_row,
+            text="Active Filters",
+            bg=BG,
+            fg="#6b7280",
+            font=("Helvetica Neue", 9, "bold"),
+        ).pack(side="left", padx=(0, 8))
+        self._chips_container = tk.Frame(chips_row, bg=BG)
+        self._chips_container.pack(side="left", fill="x", expand=True)
+
         transactions_card = card(self)
         transactions_card.pack(fill="both", expand=True, padx=24, pady=(0, 18))
 
@@ -58,7 +145,6 @@ class TransactionsPage(Page):
         self.tree.pack(fill="both", expand=True)
 
     def load(self):
-        self.tree.delete(*self.tree.get_children())
         try:
             transactions = transaction._load_transactions()
             assignments = transaction._load_assignments()
@@ -74,22 +160,181 @@ class TransactionsPage(Page):
             if tag:
                 tag_map[transaction_id].append(tag.get("Tag_name", ""))
 
+        tag_options = sorted({name for names in tag_map.values() for name in names}, key=str.lower)
+        self.tag_filter_combo["values"] = ["All Tags"] + tag_options
+        if self.tag_filter_var.get() not in self.tag_filter_combo["values"]:
+            self.tag_filter_var.set("All Tags")
+
+        self._all_rows = []
         for row in transactions:
             transaction_id = row.get("ID", "")
-            tag_string = ", ".join(tag_map.get(transaction_id, [])) or "—"
-            self.tree.insert(
-                "",
-                "end",
-                values=(
-                    transaction_id,
-                    row.get("Date", ""),
-                    row.get("Name", ""),
-                    row.get("Transaction Description", ""),
-                    f"HK${safe_float(row.get('Amount')):.2f}",
-                    tag_string,
-                ),
+            tags_for_row = tag_map.get(transaction_id, [])
+            tag_string = ", ".join(tags_for_row) or "—"
+            date_text = row.get("Date", "")
+            date_value = None
+            try:
+                date_value = datetime.strptime(date_text, "%Y-%m-%d")
+            except (TypeError, ValueError):
+                pass
+
+            amount_value = safe_float(row.get("Amount"))
+            values = (
+                transaction_id,
+                date_text,
+                row.get("Name", ""),
+                row.get("Transaction Description", ""),
+                f"HK${amount_value:.2f}",
+                tag_string,
             )
+            searchable_text = " ".join(str(part).lower() for part in values)
+            self._all_rows.append(
+                {
+                    "values": values,
+                    "search": searchable_text,
+                    "date": date_value,
+                    "amount": amount_value,
+                    "tags": [name.lower() for name in tags_for_row],
+                }
+            )
+
+        self._apply_search()
+
+    def _render_rows(self, rows):
+        self.tree.delete(*self.tree.get_children())
+        for row in rows:
+            self.tree.insert("", "end", values=row["values"])
         repaint_tree(self.tree)
+        self._result_count_label.config(text=f"{len(rows)} shown")
+
+    def _apply_search(self):
+        if not hasattr(self, "_all_rows"):
+            return
+
+        query = self.search_var.get().strip().lower()
+        terms = [term for term in query.split() if term]
+
+        from_date = self._parse_filter_date(self.date_from_var.get())
+        to_date = self._parse_filter_date(self.date_to_var.get())
+
+        min_amount = safe_float(self.amount_min_var.get(), default=None) if self.amount_min_var.get().strip() else None
+        max_amount = safe_float(self.amount_max_var.get(), default=None) if self.amount_max_var.get().strip() else None
+
+        selected_tag = self.tag_filter_var.get().strip().lower()
+        use_tag_filter = bool(selected_tag and selected_tag != "all tags")
+
+        active_chips = []
+        if terms:
+            active_chips.append(("search", f"Search: {self.search_var.get().strip()}"))
+        if from_date:
+            active_chips.append(("date_from", f"From: {from_date.strftime('%Y-%m-%d')}"))
+        if to_date:
+            active_chips.append(("date_to", f"To: {to_date.strftime('%Y-%m-%d')}"))
+        if min_amount is not None:
+            active_chips.append(("amount_min", f"Min: HK${min_amount:.2f}"))
+        if max_amount is not None:
+            active_chips.append(("amount_max", f"Max: HK${max_amount:.2f}"))
+        if use_tag_filter:
+            active_chips.append(("tag", f"Tag: {self.tag_filter_var.get().strip()}"))
+
+        filtered = []
+        for row in self._all_rows:
+            if terms and not all(term in row["search"] for term in terms):
+                continue
+
+            row_date = row.get("date")
+            if from_date and (row_date is None or row_date < from_date):
+                continue
+            if to_date and (row_date is None or row_date > to_date):
+                continue
+
+            amount = row.get("amount", 0.0)
+            if min_amount is not None and amount < min_amount:
+                continue
+            if max_amount is not None and amount > max_amount:
+                continue
+
+            if use_tag_filter and selected_tag not in row.get("tags", []):
+                continue
+
+            filtered.append(row)
+
+        self._render_rows(filtered)
+        self._render_active_filter_chips(active_chips)
+
+    def _clear_search(self):
+        self.search_var.set("")
+        self.date_from_var.set("")
+        self.date_to_var.set("")
+        self.amount_min_var.set("")
+        self.amount_max_var.set("")
+        self.tag_filter_var.set("All Tags")
+
+    def _parse_filter_date(self, value):
+        text = (value or "").strip()
+        if not text:
+            return None
+        try:
+            return datetime.strptime(text, "%Y-%m-%d")
+        except ValueError:
+            return None
+
+    def _render_active_filter_chips(self, chips):
+        for widget in self._chips_container.winfo_children():
+            widget.destroy()
+
+        if not chips:
+            tk.Label(
+                self._chips_container,
+                text="None",
+                bg=BG,
+                fg="#9ca3af",
+                font=("Helvetica Neue", 9),
+            ).pack(side="left")
+            return
+
+        for key, text in chips:
+            chip = tk.Frame(self._chips_container, bg="#e5e7eb", highlightthickness=0, bd=0)
+            chip.pack(side="left", padx=(0, 6))
+
+            tk.Label(
+                chip,
+                text=text,
+                bg="#e5e7eb",
+                fg="#1f2937",
+                font=("Helvetica Neue", 8, "bold"),
+                padx=8,
+                pady=3,
+            ).pack(side="left")
+
+            tk.Button(
+                chip,
+                text="x",
+                command=lambda filter_key=key: self._remove_filter(filter_key),
+                bg="#d1d5db",
+                fg="#111827",
+                font=("Helvetica Neue", 8, "bold"),
+                relief="flat",
+                bd=0,
+                padx=5,
+                pady=2,
+                cursor="hand2",
+                activebackground="#9ca3af",
+                activeforeground="#111827",
+            ).pack(side="left", padx=(0, 3), pady=2)
+
+    def _remove_filter(self, filter_key):
+        if filter_key == "search":
+            self.search_var.set("")
+        elif filter_key == "date_from":
+            self.date_from_var.set("")
+        elif filter_key == "date_to":
+            self.date_to_var.set("")
+        elif filter_key == "amount_min":
+            self.amount_min_var.set("")
+        elif filter_key == "amount_max":
+            self.amount_max_var.set("")
+        elif filter_key == "tag":
+            self.tag_filter_var.set("All Tags")
 
     def _delete_selected(self):
         selection = self.tree.selection()
