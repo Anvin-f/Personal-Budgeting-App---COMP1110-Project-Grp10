@@ -26,11 +26,6 @@ def delete_transaction():
 def list_transactions():
     transaction.list_transactions()
     return
-
-#alerts should be shown on the summary
-def show_summary(): 
-    analysis.show_summary()
-    return
     
 def show_graph():
     analysis.show_graph()
@@ -50,10 +45,6 @@ def delete_tag():
 
 def list_tags():
     tags.list_tags()
-    return
-
-def edit_tags():
-    tags.edit_tags()
     return
 
 #alerts
