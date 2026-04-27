@@ -20,6 +20,7 @@ class BudgetApp(tk.Tk):
         style = ttk.Style()
         style.theme_use("clam")
 
+        style.layout("TNotebook.Tab", [])
         style.configure("TNotebook", background=BG, borderwidth=0, tabmargins=0)
         style.configure(
             "TNotebook.Tab",
