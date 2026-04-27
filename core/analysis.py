@@ -4,100 +4,110 @@ from datetime import datetime, timedelta
 
 def link_tags():
     tag_link = {}
-    with open('assignments.csv', mode = 'r') as f:
-        reader = csv.DictReader(f)
-        for line in reader:
-            line_split = line.strip().split(',')
-            ID = int(line_split[0])
-            tag_ID = int(line_split[1])
+    with open('data/assignment.csv', mode='r') as f:
+        reader = csv.reader(f)
+        next(reader, None)  # skip header
+        for row in reader:
+            if not row:
+                continue
+            ID = int(row[0])
+            tag_ID = int(row[1])
             tag_link[ID] = tag_ID
-
     return tag_link
 
-def definetag() :
+def definetag():
     tags = set()
     tag_type = {}
     tag_name = {}
-    with open('tags.csv', mode = 'r') as f:
-        reader = csv.DictReader(f)
-        for line in reader:
-            line_split = line.strip().split(',')
-            tag_ID = int(line_split[0])
-            tag_type[tag_ID] = line_split[1]
-            tag_name[tag_ID] = line_split[2]
+    with open('data/tags.csv', mode='r') as f:
+        reader = csv.reader(f)
+        next(reader, None)  # skip header
+        for row in reader:
+            if not row:
+                continue
+            tag_ID = int(row[0])
+            tag_type[tag_ID] = row[1]
+            tag_name[tag_ID] = row[2]
             tags.add(tag_ID)
-    
     return tags, tag_type, tag_name
 
-def printspend(tag_name, category, total_spend, ids) :
-    print(f'{ids}BREAKDOWN:\n')
+def printspend(tag_name, category, total_spend, ids):
+    print(f'{ids} BREAKDOWN:\n')
     print(f'{ids} total spending: {total_spend}\n')
-
     print(f'{ids} Category Breakdown:')
-    for i in category :
-        print(f'{tag_name[i]}: {category[i]}')
-    
+    for tag_id in category:
+        print(f'{tag_name[tag_id]}: {category[tag_id]}')
     return
 
-def printtop3(tag_name, category) :
+def printtop3(tag_name, category):
     print("\nTop 3 Categories Spent:")
     fre = 0
     for tag_id, amount in category:
         print(f'{tag_name[tag_id]}: {amount}')
-
-        if(fre == 3) :
-            break 
-
+        fre += 1
+        if fre == 3:
+            break
     return
 
-def show_summary(): 
+def show_summary():
     tag_link = link_tags()
-    tags,tag_type, tag_name = definetag()
+    tags, tag_type, tag_name = definetag()
 
     total_spend_month = 0
     total_spend_week = 0
     total_spend_today = 0
-    
+
     category_month = {}
     category_week = {}
     category_today = {}
 
     today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
     week_cutoff = today - timedelta(days=6)
-    
-    with open('transactions.csv', mode = 'r') as f:
-        reader = csv.DictReader(f)
-        for line in reader:
-            line_split = line.strip().split(',')
-            transaction_id = int(line_split[0])
-            transaction_date = datetime.strptime(line_split[1], "%Y-%m-%d")
-            transaction_name = line_split[2]
-            transaction_amount = float(line_split[4])
 
-            # included in month or not
-            if(today.month == transaction_date.month and today.year == transaction_date.year) :
+    with open('data/transactions.csv', mode='r') as f:
+        reader = csv.reader(f)
+        next(reader, None)  # skip header
+        for row in reader:
+            if not row:
+                continue
+            transaction_id = int(row[0])
+            transaction_date = datetime.strptime(row[1], "%Y-%m-%d")
+            transaction_name = row[2]
+            transaction_amount = float(row[4])
+
+            # check if included in current month
+            if today.month == transaction_date.month and today.year == transaction_date.year:
                 total_spend_month += transaction_amount
-                if(tag_link[transaction_id] not in category_month) :
-                    category_month[tag_link[transaction_id]] = transaction_amount
-                else :
-                    category_month[tag_link[transaction_id]] += transaction_amount
+                if tag_link.get(transaction_id) is None:
+                    continue
+                tag_id = tag_link[transaction_id]
+                if tag_id not in category_month:
+                    category_month[tag_id] = transaction_amount
+                else:
+                    category_month[tag_id] += transaction_amount
 
-            # included in week or not
-            if(transaction_date >= week_cutoff) :
+            # check if included in current week
+            if transaction_date >= week_cutoff:
                 total_spend_week += transaction_amount
-                if(tag_link[transaction_id] not in category_week) :
-                    category_week[tag_link[transaction_id]] = transaction_amount
-                else :
-                    category_week[tag_link[transaction_id]] += transaction_amount
+                if tag_link.get(transaction_id) is None:
+                    continue
+                tag_id = tag_link[transaction_id]
+                if tag_id not in category_week:
+                    category_week[tag_id] = transaction_amount
+                else:
+                    category_week[tag_id] += transaction_amount
 
-            # included in daily or not
-            if(transaction_date >= today) :
+            # check if included today
+            if transaction_date >= today:
                 total_spend_today += transaction_amount
-                if(tag_link[transaction_id] not in category_today) :
-                    category_today[tag_link[transaction_id]] = transaction_amount
-                else :
-                    category_today[tag_link[transaction_id]] += transaction_amount
-    
+                if tag_link.get(transaction_id) is None:
+                    continue
+                tag_id = tag_link[transaction_id]
+                if tag_id not in category_today:
+                    category_today[tag_id] = transaction_amount
+                else:
+                    category_today[tag_id] += transaction_amount
+
     printspend(tag_name, category_today, total_spend_today, "Daily")
     printspend(tag_name, category_week, total_spend_week, "Weekly")
     printspend(tag_name, category_month, total_spend_month, "Monthly")
@@ -107,78 +117,79 @@ def show_summary():
 
     return
 
-def line_graph(category_month) :
+def line_graph(category_month):
     category_month = dict(sorted(category_month.items(), key=lambda item: item[1], reverse=True))
-
     categories = list(category_month.keys())
     amounts = list(category_month.values())
 
-    plt.clf() 
-    plt.line(categories, amounts, color='skyblue', edgecolor='navy')
-
+    plt.clf()
+    plt.plot(categories, amounts, color='skyblue', marker='o', linestyle='-')
     plt.xlabel('Category', fontsize=12)
     plt.ylabel('Amount Spent ($)', fontsize=12)
     plt.title('Monthly Spending Summary', fontsize=14)
-
     plt.xticks(rotation=45, ha='right')
-    plt.tight_layout() 
+    plt.tight_layout()
     plt.show()
-    
+
     return
 
-def bar_graph(spending_per_day) : 
+def bar_graph(spending_per_day):
     spending_per_day = sorted(spending_per_day.items())
     dates = [item[0] for item in spending_per_day]
     amounts = [item[1] for item in spending_per_day]
 
-    plt.clf() 
+    plt.clf()
     plt.bar(dates, amounts, color='teal')
-
     plt.xlabel('Date')
     plt.ylabel('Amount Spent ($)')
     plt.title('Daily Spending Summary')
-    
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
 
     return
 
-    
 def show_graph():
     tag_link = link_tags()
-    tags,tag_type, tag_name = definetag()
-    
+    tags, tag_type, tag_name = definetag()
+
     category_month = {}
     spending_per_day = {}
 
     today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
     thirtyday_cutoff = today - timedelta(days=29)
-    
-    with open('transactions.csv', mode = 'r') as f:
-        reader = csv.DictReader(f)
-        for line in reader:
-            line_split = line.strip().split(',')
-            transaction_id = int(line_split[0])
-            transaction_date = datetime.strptime(line_split[1], "%Y-%m-%d")
-            transaction_name = line_split[2]
-            transaction_amount = float(line_split[4])
 
-            # included in month or not
-            if(today.month == transaction_date.month and today.year == transaction_date.year) :
-                if(tag_name[tag_link[transaction_id]] not in category_month) :
-                    category_month[tag_name[tag_link[transaction_id]]] = transaction_amount
-                else :
-                    category_month[tag_name[tag_link[transaction_id]]] += transaction_amount
-            
-            if(transaction_date >= thirtyday_cutoff):
-                if(transaction_date not in spending_per_day) :
-                    spending_per_day[transaction_date] = transaction_amount
-                else :
-                    spending_per_day[transaction_date] += transaction_amount
-    
+    with open('data/transactions.csv', mode='r') as f:
+        reader = csv.reader(f)
+        next(reader, None)
+        for row in reader:
+            if not row:
+                continue
+            transaction_id = int(row[0])
+            transaction_date = datetime.strptime(row[1], "%Y-%m-%d")
+            transaction_name = row[2]
+            transaction_amount = float(row[4])
+
+            # check if included in current month
+            if today.month == transaction_date.month and today.year == transaction_date.year:
+                if tag_link.get(transaction_id) is None:
+                    continue
+                tag_id = tag_link[transaction_id]
+                cat_name = tag_name.get(tag_id, "Unknown")
+                if cat_name not in category_month:
+                    category_month[cat_name] = transaction_amount
+                else:
+                    category_month[cat_name] += transaction_amount
+
+            # check if within last 30 days
+            if transaction_date >= thirtyday_cutoff:
+                day_str = transaction_date.strftime('%Y-%m-%d')
+                if day_str not in spending_per_day:
+                    spending_per_day[day_str] = transaction_amount
+                else:
+                    spending_per_day[day_str] += transaction_amount
+
     line_graph(category_month)
     bar_graph(spending_per_day)
-    
-    return
 
+    return
