@@ -11,10 +11,13 @@ DEFAULT_SETTINGS = {
     "show_filter_chips": True,
     "confirm_delete": True,
     "api_key": "",
+    "profile_name": "",
+    "profile_job": "",
+    "profile_monthly_income": "",
 }
 
 _BOOL_KEYS = {"dark_mode", "compact_tables", "show_filter_chips", "confirm_delete"}
-_STR_KEYS = {"api_key"}
+_STR_KEYS = {"api_key", "profile_name", "profile_job", "profile_monthly_income"}
 
 
 def _normalize_settings(data):

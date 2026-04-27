@@ -10,6 +10,7 @@ from core.alerts import (
     _current_month_transactions,
     _sum_by_tag,
 )
+import core.settings as app_settings
 
 
 def build_financial_context():
@@ -80,29 +81,53 @@ def build_financial_context():
         category_lines.append(f"  - {tag_name}: HK${total:.2f} total all time")
 
     month_str = today.strftime("%B %Y")
-    context = f"""You are a helpful personal finance assistant embedded in a budgeting app. \
-All amounts are in HK$ (Hong Kong Dollars). Today is {today.strftime('%Y-%m-%d')}.
+    # Build profile section if available
+    profile = app_settings.read_settings()
+    profile_lines = []
+    if profile.get("profile_name"):
+        profile_lines.append(f"Name: {profile.get('profile_name')}")
+    if profile.get("profile_job"):
+        profile_lines.append(f"Profession: {profile.get('profile_job')}")
+    if profile.get("profile_monthly_income"):
+        profile_lines.append(f"Monthly Income: HK${profile.get('profile_monthly_income')}")
 
-## Current Month ({month_str})
-Total spent: HK${total_spent_month:.2f}
-Number of transactions this month: {len(month_txns)}
+    # Build context with profile section
+    month_str = today.strftime("%B %Y")
+    context_lines = [
+        "You are a helpful personal finance assistant embedded in a budgeting app.",
+        f"All amounts are in HK$ (Hong Kong Dollars). Today is {today.strftime('%Y-%m-%d')}.",
+    ]
 
-## Monthly Budget Status
-{chr(10).join(budget_lines) if budget_lines else '  No budgets set.'}
+    if profile_lines:
+        context_lines.append("## User Profile")
+        for line in profile_lines:
+            context_lines.append(f"  - {line}")
+        context_lines.append("")
 
-## Recent Transactions (Last 30 Days, newest first)
-{chr(10).join(txn_lines) if txn_lines else '  No recent transactions.'}
+    context_lines.extend([
+        f"## Current Month ({month_str})",
+        f"Total spent: HK${total_spent_month:.2f}",
+        f"Number of transactions this month: {len(month_txns)}",
+        "",
+        "## Monthly Budget Status",
+        chr(10).join(budget_lines) if budget_lines else "  No budgets set.",
+        "",
+        "## Recent Transactions (Last 30 Days, newest first)",
+        chr(10).join(txn_lines) if txn_lines else "  No recent transactions.",
+        "",
+        "## All-Time Spending by Category",
+        chr(10).join(category_lines) if category_lines else "  No categorized spending.",
+        "",
+        "## Transaction Categories (Tags)",
+        chr(10).join(tag_lines) if tag_lines else "  No tags defined.",
+        "",
+        f"Total transactions on record: {len(transactions)}",
+        "",
+        "Answer the user's questions about their spending, budgets, and transactions using the data above.",
+        "Be concise and helpful. Always prefix amounts with HK$."
+    ])
 
-## All-Time Spending by Category
-{chr(10).join(category_lines) if category_lines else '  No categorized spending.'}
-
-## Transaction Categories (Tags)
-{chr(10).join(tag_lines) if tag_lines else '  No tags defined.'}
-
-Total transactions on record: {len(transactions)}
-
-Answer the user's questions about their spending, budgets, and transactions using the data above. \
-Be concise and helpful. Always prefix amounts with HK$."""
+    context = chr(10).join(context_lines)
 
     return context
 

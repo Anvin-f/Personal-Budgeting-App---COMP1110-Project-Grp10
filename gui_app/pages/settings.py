@@ -14,17 +14,39 @@ class SettingsPage(Page):
         wrapper = card(self)
         wrapper.pack(fill="both", expand=True, padx=24, pady=(12, 18))
 
+        scroll_container = tk.Frame(wrapper, bg=CARD)
+        scroll_container.pack(fill="both", expand=True)
+
+        self._settings_canvas = tk.Canvas(
+            scroll_container,
+            bg=CARD,
+            highlightthickness=0,
+            bd=0,
+        )
+        self._settings_canvas.pack(side="left", fill="both", expand=True)
+
+        settings_scrollbar = tk.Scrollbar(scroll_container, orient="vertical", command=self._settings_canvas.yview)
+        settings_scrollbar.pack(side="right", fill="y")
+        self._settings_canvas.configure(yscrollcommand=settings_scrollbar.set)
+
+        form = tk.Frame(self._settings_canvas, bg=CARD)
+        self._canvas_window = self._settings_canvas.create_window((0, 0), window=form, anchor="nw")
+        form.bind("<Configure>", lambda _event: self._settings_canvas.configure(scrollregion=self._settings_canvas.bbox("all")))
+        self._settings_canvas.bind("<Configure>", self._on_canvas_resize)
+
+        self._settings_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
         # AI Assistant section
         tk.Label(
-            wrapper,
+            form,
             text="AI Assistant",
             bg=CARD,
             fg=TEXT,
             font=("Helvetica Neue", 13, "bold"),
         ).pack(anchor="w", padx=16, pady=(14, 6))
-        tk.Frame(wrapper, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(0, 10))
+        tk.Frame(form, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(0, 10))
 
-        api_row = tk.Frame(wrapper, bg=CARD)
+        api_row = tk.Frame(form, bg=CARD)
         api_row.pack(fill="x", padx=16, pady=(4, 8))
         tk.Label(
             api_row,
@@ -77,17 +99,38 @@ class SettingsPage(Page):
         )
         self.toggle_btn.pack(side="left")
 
-        tk.Frame(wrapper, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(8, 10))
+        tk.Frame(form, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(8, 10))
+
+        # Personal Profile section
+        tk.Label(
+            form,
+            text="👤  Personal Profile",
+            bg=CARD,
+            fg=TEXT,
+            font=("Helvetica Neue", 13, "bold"),
+        ).pack(anchor="w", padx=16, pady=(4, 6))
+        tk.Frame(form, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(0, 10))
+
+        self.profile_name_var = tk.StringVar(value="")
+        self._text_field(form, "Your Name", "Optional. Used in AI analysis.", self.profile_name_var)
+
+        self.profile_job_var = tk.StringVar(value="")
+        self._text_field(form, "Job/Profession", "E.g., Software Engineer, Teacher.", self.profile_job_var)
+
+        self.profile_monthly_income_var = tk.StringVar(value="")
+        self._text_field(form, "Monthly Income (HK$)", "E.g., 30000 or 25000-30000.", self.profile_monthly_income_var)
+
+        tk.Frame(form, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(8, 10))
 
         # Appearance section
         tk.Label(
-            wrapper,
+            form,
             text="Appearance & Preferences",
             bg=CARD,
             fg=TEXT,
             font=("Helvetica Neue", 13, "bold"),
         ).pack(anchor="w", padx=16, pady=(4, 6))
-        tk.Frame(wrapper, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(0, 10))
+        tk.Frame(form, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(0, 10))
 
         self.dark_mode_var = tk.BooleanVar(value=False)
         self.compact_tables_var = tk.BooleanVar(value=False)
@@ -95,32 +138,32 @@ class SettingsPage(Page):
         self.confirm_delete_var = tk.BooleanVar(value=True)
 
         self._check(
-            wrapper,
+            form,
             "Dark Mode",
             "Use a darker application theme.",
             self.dark_mode_var,
         )
         self._check(
-            wrapper,
+            form,
             "Compact Tables",
             "Reduce table row height to display more rows.",
             self.compact_tables_var,
         )
         self._check(
-            wrapper,
+            form,
             "Show Filter Chips",
             "Display active filter chips in Transactions.",
             self.show_filter_chips_var,
         )
         self._check(
-            wrapper,
+            form,
             "Confirm Before Delete",
             "Ask for confirmation before deleting records.",
             self.confirm_delete_var,
         )
 
         self.status_label = tk.Label(
-            wrapper,
+            form,
             text="",
             bg=CARD,
             fg="#6b7280",
@@ -128,10 +171,16 @@ class SettingsPage(Page):
         )
         self.status_label.pack(anchor="w", padx=16, pady=(8, 0))
 
-        btn_row = tk.Frame(wrapper, bg=CARD)
+        btn_row = tk.Frame(form, bg=CARD)
         btn_row.pack(anchor="w", padx=16, pady=(12, 16))
         button(btn_row, "✅  Apply", self._apply, "#3b82f6").pack(side="left", padx=(0, 8))
         button(btn_row, "🔄  Reset", self._reset, "#6b7280").pack(side="left")
+
+    def _on_canvas_resize(self, event):
+        self._settings_canvas.itemconfigure(self._canvas_window, width=event.width)
+
+    def _on_mousewheel(self, event):
+        self._settings_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _check(self, parent, title, description, variable):
         row = tk.Frame(parent, bg=CARD)
@@ -165,6 +214,41 @@ class SettingsPage(Page):
             anchor="w",
         ).pack(anchor="w", padx=(24, 0))
 
+    def _text_field(self, parent, title, description, variable):
+        row = tk.Frame(parent, bg=CARD)
+        row.pack(fill="x", padx=16, pady=(4, 8))
+
+        tk.Label(
+            row,
+            text=title,
+            bg=CARD,
+            fg=TEXT,
+            font=("Helvetica Neue", 10, "bold"),
+            anchor="w",
+        ).pack(anchor="w")
+        tk.Label(
+            row,
+            text=description,
+            bg=CARD,
+            fg="#6b7280",
+            font=("Helvetica Neue", 9),
+            anchor="w",
+        ).pack(anchor="w", padx=(24, 0), pady=(0, 4))
+
+        entry = tk.Entry(
+            row,
+            textvariable=variable,
+            font=("Helvetica Neue", 10),
+            bg="#f3f4f6",
+            fg=TEXT,
+            bd=0,
+            highlightbackground=BORDER,
+            highlightthickness=1,
+            relief="flat",
+            width=48,
+        )
+        entry.pack(anchor="w", padx=(24, 0), ipady=6)
+
     def _toggle_key_visibility(self):
         self._show_key = not self._show_key
         self.api_key_entry.configure(show="" if self._show_key else "*")
@@ -178,19 +262,26 @@ class SettingsPage(Page):
         self.show_filter_chips_var.set(settings.get("show_filter_chips", True))
         self.confirm_delete_var.set(settings.get("confirm_delete", True))
         self.status_label.config(text="")
+        self.profile_name_var.set(settings.get("profile_name", ""))
+        self.profile_job_var.set(settings.get("profile_job", ""))
+        self.profile_monthly_income_var.set(settings.get("profile_monthly_income", ""))
 
     def _apply(self):
-        updated = app_settings.write_settings(
+        app_settings.write_settings(
             {
                 "api_key": self.api_key_var.get().strip(),
                 "dark_mode": self.dark_mode_var.get(),
                 "compact_tables": self.compact_tables_var.get(),
                 "show_filter_chips": self.show_filter_chips_var.get(),
                 "confirm_delete": self.confirm_delete_var.get(),
+                "profile_name": self.profile_name_var.get().strip(),
+                "profile_job": self.profile_job_var.get().strip(),
+                "profile_monthly_income": self.profile_monthly_income_var.get().strip(),
             }
         )
         top = self.winfo_toplevel()
         if hasattr(top, "apply_runtime_settings"):
+            updated = app_settings.read_settings()
             top.apply_runtime_settings(updated)
             self.status_label.config(text="Settings applied.")
         else:
@@ -207,3 +298,6 @@ class SettingsPage(Page):
         if hasattr(top, "apply_runtime_settings"):
             top.apply_runtime_settings(defaults)
         self.status_label.config(text="Defaults restored.")
+        self.profile_name_var.set(defaults.get("profile_name", ""))
+        self.profile_job_var.set(defaults.get("profile_job", ""))
+        self.profile_monthly_income_var.set(defaults.get("profile_monthly_income", ""))
