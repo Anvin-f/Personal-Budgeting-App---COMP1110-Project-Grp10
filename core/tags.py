@@ -27,7 +27,6 @@ def read_tag_csv():
      return tagDic
 
 def write_tag_csv(tagDic):
-    print(tagDic)
     sorted_tags = sorted(tagDic.values(), key=lambda x: int(x['Tag_id']))
     with open(csvpath, mode="w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=["Tag_id", "Tag_type", "Tag_name"])
