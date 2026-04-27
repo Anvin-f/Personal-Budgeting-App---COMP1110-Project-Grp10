@@ -1,1 +1,15 @@
 ID,Date,Name,Transaction Description,Amount
+1,2026-04-01,Supermarket,Weekly groceries,320.50
+2,2026-04-02,MTR,Transport top-up,120.00
+3,2026-04-03,Cafe,Coffee with friend,45.00
+4,2026-04-05,Electricity Bill,Monthly utility payment,780.00
+5,2026-04-07,Movie,Weekend entertainment,110.00
+6,2026-04-10,Restaurant,Dinner out,260.00
+7,2026-04-12,Pharmacy,Health supplies,95.50
+8,2026-04-15,Internet Bill,Home broadband,298.00
+9,2026-04-16,Balance Out - Alex,Shared rent advance,1200.00
+10,2026-04-20,Balance In - Alex,Rent payback partial,400.00
+11,2026-04-18,Balance Out - Sam,Concert ticket paid upfront,680.00
+12,2026-04-22,Balance In - Sam,Ticket reimbursement,680.00
+13,2026-04-23,Balance Out - Chris,Group dinner settlement,360.00
+14,2026-04-26,Balance In - Chris,Dinner payback,150.00

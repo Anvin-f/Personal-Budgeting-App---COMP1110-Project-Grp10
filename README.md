@@ -22,9 +22,9 @@ A personal budgeting app with a Tkinter GUI for managing transactions, tags, bud
 - Create custom tags for organisation
 
 ### Balance Adjustments & Irregular Expenses
-- Record peer-to-peer balance adjustments
-- Handle one-time irregular expenses without affecting the reports
-- Take peer adjustments into account, such as shared rent and paying each other back
+- Record peer-to-peer balance adjustments using tags (`Balance`, `Peer:<name>`)
+- Handle one-time irregular expenses using tags (`Irregular`, `One-time`) so they can be excluded from regular spending summaries
+- Take peer adjustments into account (for example shared rent and paybacks) through net balance tracking per person
 
 ---
 

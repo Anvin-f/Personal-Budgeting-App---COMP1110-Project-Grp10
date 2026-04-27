@@ -1,4 +1,10 @@
 Tag_id,Tag_type,Tag_name
-1,Need,Food
-2,Want,Entertainment
+1,Needs,Food
+2,Wants,Entertainment
+3,Needs,Transport
+4,Bills,Utilities
+5,Bills,Internet
+6,Balance,Peer:Alex
+7,Balance,Peer:Sam
+8,Balance,Peer:Chris
 
