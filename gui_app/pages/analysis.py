@@ -18,6 +18,52 @@ class AnalysisPage(Page):
     def build(self):
         page_header(self, "Analysis")
 
+        self._selected_month = datetime.today().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        self._min_month = self._selected_month
+        self._max_month = self._selected_month
+
+        nav = tk.Frame(self, bg=BG)
+        nav.pack(fill="x", padx=24, pady=(10, 0))
+
+        self.prev_btn = tk.Button(
+            nav,
+            text="< Previous",
+            font=("Helvetica Neue", 9, "bold"),
+            bg="#e5e7eb",
+            fg=TEXT,
+            relief="flat",
+            bd=0,
+            padx=10,
+            pady=5,
+            cursor="hand2",
+            command=self._go_prev_month,
+        )
+        self.prev_btn.pack(side="left")
+
+        self.month_label = tk.Label(
+            nav,
+            text="",
+            bg=BG,
+            fg=TEXT,
+            font=("Helvetica Neue", 11, "bold"),
+        )
+        self.month_label.pack(side="left", padx=12)
+
+        self.next_btn = tk.Button(
+            nav,
+            text="Next >",
+            font=("Helvetica Neue", 9, "bold"),
+            bg="#e5e7eb",
+            fg=TEXT,
+            relief="flat",
+            bd=0,
+            padx=10,
+            pady=5,
+            cursor="hand2",
+            command=self._go_next_month,
+        )
+        self.next_btn.pack(side="left")
+
         paned = tk.PanedWindow(self, orient="horizontal", bg=BG, sashwidth=6, sashrelief="flat")
         paned.pack(fill="both", expand=True, padx=24, pady=(10, 18))
 
@@ -56,10 +102,56 @@ class AnalysisPage(Page):
         )
         self.summary_box.pack(fill="both", expand=True, padx=6, pady=(0, 14))
 
+    def _shift_month(self, value, delta):
+        month_index = (value.year * 12 + value.month - 1) + delta
+        year = month_index // 12
+        month = month_index % 12 + 1
+        return datetime(year, month, 1)
+
+    def _refresh_month_nav(self):
+        self.month_label.config(text=self._selected_month.strftime("%B %Y"))
+        prev_state = "disabled" if self._selected_month <= self._min_month else "normal"
+        next_state = "disabled" if self._selected_month >= self._max_month else "normal"
+        self.prev_btn.config(state=prev_state)
+        self.next_btn.config(state=next_state)
+
+    def _go_prev_month(self):
+        self._selected_month = self._shift_month(self._selected_month, -1)
+        self.load()
+
+    def _go_next_month(self):
+        self._selected_month = self._shift_month(self._selected_month, 1)
+        self.load()
+
     def load(self):
         transactions = alerts.read_transactions_csv()
         tag_dict = alerts.read_tags_csv()
         assignments = alerts.read_assignments_csv()
+
+        current_month = datetime.today().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        months_in_data = set()
+        for row in transactions:
+            try:
+                date_value = datetime.strptime(row["Date"], "%Y-%m-%d")
+            except (ValueError, KeyError):
+                continue
+            months_in_data.add(date_value.replace(day=1, hour=0, minute=0, second=0, microsecond=0))
+
+        if months_in_data:
+            self._min_month = min(months_in_data)
+            self._max_month = max(max(months_in_data), current_month)
+        else:
+            self._min_month = current_month
+            self._max_month = current_month
+
+        if self._selected_month < self._min_month:
+            self._selected_month = self._min_month
+        if self._selected_month > self._max_month:
+            self._selected_month = self._max_month
+        self._refresh_month_nav()
+
+        selected_start = self._selected_month
+        selected_end = self._shift_month(selected_start, 1)
 
         tag_map = {}
         for assignment in assignments:
@@ -72,20 +164,13 @@ class AnalysisPage(Page):
                 continue
             tag_map.setdefault(transaction_id, []).append(tag)
 
-        today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
-        week_cutoff = today - timedelta(days=6)
-        thirty_day_cutoff = today - timedelta(days=29)
-
-        by_category_today = defaultdict(float)
-        by_category_week = defaultdict(float)
         by_category_month = defaultdict(float)
         per_day = defaultdict(float)
-        total_today = 0.0
-        total_week = 0.0
         total_month = 0.0
         irregular_month_total = 0.0
         balance_month_out = 0.0
         balance_month_in = 0.0
+        peer_month_balances = {}
 
         def has_tag_type(tags_for_transaction, tag_type):
             wanted = tag_type.strip().lower()
@@ -108,55 +193,60 @@ class AnalysisPage(Page):
                 amount = float(row["Amount"])
             except (ValueError, KeyError):
                 continue
+            if date_value < selected_start or date_value >= selected_end:
+                continue
+
             transaction_id = row.get("ID")
             tags_for_transaction = tag_map.get(transaction_id, [])
             is_balance = has_tag_type(tags_for_transaction, adjustments.BALANCE_TAG_TYPE)
             is_irregular = has_tag_type(tags_for_transaction, adjustments.IRREGULAR_TAG_TYPE)
 
-            if date_value.year == today.year and date_value.month == today.month:
-                if is_irregular:
-                    irregular_month_total += amount
-                if is_balance:
-                    name_text = (row.get("Name") or "").strip().lower()
-                    if name_text.startswith("balance in"):
-                        balance_month_in += amount
-                    else:
-                        balance_month_out += amount
+            peer_name = "Unknown"
+            for tag in tags_for_transaction:
+                tag_name = tag.get("Tag_name", "")
+                if tag_name.startswith(adjustments.PEER_TAG_PREFIX):
+                    peer_name = tag_name[len(adjustments.PEER_TAG_PREFIX) :].strip() or "Unknown"
+                    break
+
+            if is_balance:
+                peer_entry = peer_month_balances.setdefault(peer_name, {"out": 0.0, "in": 0.0, "net": 0.0})
+
+            if is_irregular:
+                irregular_month_total += amount
+            if is_balance:
+                name_text = (row.get("Name") or "").strip().lower()
+                if name_text.startswith("balance in"):
+                    balance_month_in += amount
+                    peer_entry["in"] += amount
+                else:
+                    balance_month_out += amount
+                    peer_entry["out"] += amount
+                peer_entry["net"] = peer_entry["out"] - peer_entry["in"]
 
             if is_balance or is_irregular:
                 continue
 
             tag_name = category_name(tags_for_transaction)
 
-            if date_value >= today:
-                by_category_today[tag_name] += amount
-                total_today += amount
-            if date_value >= week_cutoff:
-                by_category_week[tag_name] += amount
-                total_week += amount
-            if date_value.year == today.year and date_value.month == today.month:
-                by_category_month[tag_name] += amount
-                total_month += amount
-            if date_value >= thirty_day_cutoff:
-                per_day[date_value.strftime("%m/%d")] += amount
+            by_category_month[tag_name] += amount
+            total_month += amount
+            per_day[date_value.strftime("%m/%d")] += amount
 
         peer_balances = adjustments.calculate_peer_balances()
 
-        self._draw_charts(by_category_month, per_day)
+        self._draw_charts(by_category_month, per_day, selected_start)
         self._draw_summary(
-            total_today,
-            total_week,
+            selected_start,
             total_month,
-            by_category_today,
-            by_category_week,
             by_category_month,
             irregular_month_total,
             balance_month_out,
             balance_month_in,
+            peer_month_balances,
             peer_balances,
         )
 
-    def _draw_charts(self, by_category_month, per_day):
+    def _draw_charts(self, by_category_month, per_day, selected_month):
         self.ax1.cla()
         self.ax2.cla()
         self.fig.patch.set_facecolor(CARD)
@@ -189,7 +279,7 @@ class AnalysisPage(Page):
             self.ax1.text(
                 0.5,
                 0.5,
-                "No transactions this month",
+                "No regular spending in this month",
                 ha="center",
                 va="center",
                 transform=self.ax1.transAxes,
@@ -197,7 +287,14 @@ class AnalysisPage(Page):
                 fontsize=10,
             )
 
-        self.ax1.set_title("Monthly Spending by Category", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+        month_title = selected_month.strftime("%B %Y")
+        self.ax1.set_title(
+            f"Spending by Category - {month_title}",
+            fontsize=10,
+            pad=8,
+            color=TEXT,
+            fontweight="bold",
+        )
         self.ax1.set_ylabel("HK$", fontsize=9, color=MUTED)
         self.ax1.tick_params(axis="x", rotation=30, labelsize=8, colors=TEXT)
         self.ax1.tick_params(axis="y", labelsize=8, colors=MUTED)
@@ -212,7 +309,7 @@ class AnalysisPage(Page):
             self.ax2.text(
                 0.5,
                 0.5,
-                "No transactions in last 30 days",
+                "No regular spending days in this month",
                 ha="center",
                 va="center",
                 transform=self.ax2.transAxes,
@@ -220,7 +317,13 @@ class AnalysisPage(Page):
                 fontsize=10,
             )
 
-        self.ax2.set_title("Daily Spending (Last 30 Days)", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+        self.ax2.set_title(
+            f"Daily Spending - {month_title}",
+            fontsize=10,
+            pad=8,
+            color=TEXT,
+            fontweight="bold",
+        )
         self.ax2.set_ylabel("HK$", fontsize=9, color=MUTED)
         self.ax2.tick_params(axis="x", rotation=45, labelsize=7, colors=TEXT)
         self.ax2.tick_params(axis="y", labelsize=8, colors=MUTED)
@@ -230,15 +333,13 @@ class AnalysisPage(Page):
 
     def _draw_summary(
         self,
-        total_today,
-        total_week,
+        selected_month,
         total_month,
-        by_category_today,
-        by_category_week,
         by_category_month,
         irregular_month_total,
         balance_month_out,
         balance_month_in,
+        peer_month_balances,
         peer_balances,
     ):
         def section(title, total, categories):
@@ -250,25 +351,32 @@ class AnalysisPage(Page):
                 lines.append("  No transactions")
             return lines
 
-        body = []
-        body += section("TODAY", total_today, by_category_today)
-        body.append("")
-        body += section("THIS WEEK", total_week, by_category_week)
-        body.append("")
-        body += section("THIS MONTH", total_month, by_category_month)
+        month_label = selected_month.strftime("%B %Y").upper()
+        body = section(f"REGULAR SPENDING - {month_label}", total_month, by_category_month)
 
         if by_category_month:
             body.append("")
-            body.append("TOP 3 CATEGORIES")
+            body.append(f"TOP 3 CATEGORIES ({month_label})")
             for name, amount in sorted(by_category_month.items(), key=lambda item: item[1], reverse=True)[:3]:
                 body.append(f"  {name}: HK${amount:.2f}")
 
         body.append("")
-        body.append("ADJUSTMENTS (THIS MONTH)")
+        body.append(f"ADJUSTMENTS ({month_label})")
         body.append(f"Irregular Expenses: HK${irregular_month_total:.2f}")
         body.append(f"Balance Out: HK${balance_month_out:.2f}")
         body.append(f"Balance In: HK${balance_month_in:.2f}")
         body.append(f"Net Peer Balance: HK${(balance_month_out - balance_month_in):.2f}")
+
+        body.append("")
+        body.append(f"PEER BALANCES ({month_label})")
+        if peer_month_balances:
+            for peer, values in sorted(peer_month_balances.items(), key=lambda item: item[0].lower()):
+                body.append(
+                    f"  {peer}: Out HK${values['out']:.2f}, "
+                    f"In HK${values['in']:.2f}, Net HK${values['net']:.2f}"
+                )
+        else:
+            body.append("  No peer balance adjustments in this month")
 
         body.append("")
         body.append("PEER BALANCES (ALL TIME)")
