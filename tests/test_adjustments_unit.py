@@ -76,6 +76,40 @@ def test_calculate_peer_balances_net_logic(isolated_files):
     assert balances["Sam"]["net"] == 125.0
 
 
+def test_record_peer_adjustment_accepts_direction_aliases(isolated_files):
+    adjustments.record_peer_adjustment("2026-04-01", "Dana", 90, "paid", "Taxi")
+    adjustments.record_peer_adjustment("2026-04-02", "Dana", 40, "received", "Refund")
+
+    balances = adjustments.calculate_peer_balances()
+    assert balances["Dana"]["out"] == 90.0
+    assert balances["Dana"]["in"] == 40.0
+    assert balances["Dana"]["net"] == 50.0
+
+
+def test_calculate_peer_balances_uses_metadata_before_name(isolated_files):
+    transaction_id = adjustments.record_peer_adjustment("2026-04-01", "Mia", 55, "in", "Dinner")
+    transactions = transaction._load_transactions()
+    transactions[0]["Name"] = "Something Else"
+    assert transactions[0]["ID"] == transaction_id
+    transaction._save_transactions(transactions)
+
+    balances = adjustments.calculate_peer_balances()
+    assert balances["Mia"]["in"] == 55.0
+    assert balances["Mia"]["out"] == 0.0
+
+
+def test_list_recent_peer_entries_returns_latest_first(isolated_files):
+    adjustments.record_peer_adjustment("2026-04-01", "Alex", 120, "out", "Lunch")
+    adjustments.record_peer_adjustment("2026-04-03", "Sam", 80, "in", "Payback")
+
+    recent = adjustments.list_recent_peer_entries(limit=2)
+    assert len(recent) == 2
+    assert recent[0]["peer"] == "Sam"
+    assert recent[0]["direction"] == "in"
+    assert recent[0]["description"] == "Payback"
+    assert recent[1]["peer"] == "Alex"
+
+
 def test_adjusted_spending_total_excludes_balance_and_irregular(isolated_files):
     base = transaction._load_transactions()
     base.append(
