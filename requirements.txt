@@ -1,6 +1,7 @@
 # Core dependencies
 pandas>=2.3.0
 matplotlib>=3.10.0
+openai>=1.0.0
 
 # CLI utilities
 click==8.1.7

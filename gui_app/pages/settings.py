@@ -14,13 +14,79 @@ class SettingsPage(Page):
         wrapper = card(self)
         wrapper.pack(fill="both", expand=True, padx=24, pady=(12, 18))
 
+        # AI Assistant section
+        tk.Label(
+            wrapper,
+            text="AI Assistant",
+            bg=CARD,
+            fg=TEXT,
+            font=("Helvetica Neue", 13, "bold"),
+        ).pack(anchor="w", padx=16, pady=(14, 6))
+        tk.Frame(wrapper, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(0, 10))
+
+        api_row = tk.Frame(wrapper, bg=CARD)
+        api_row.pack(fill="x", padx=16, pady=(4, 8))
+        tk.Label(
+            api_row,
+            text="DeepSeek API Key",
+            bg=CARD,
+            fg=TEXT,
+            font=("Helvetica Neue", 10, "bold"),
+            anchor="w",
+        ).pack(anchor="w")
+        tk.Label(
+            api_row,
+            text="Required to use the AI Assistant chat. Your key is stored locally.",
+            bg=CARD,
+            fg="#6b7280",
+            font=("Helvetica Neue", 9),
+            anchor="w",
+        ).pack(anchor="w", padx=(24, 0), pady=(0, 4))
+
+        key_entry_frame = tk.Frame(api_row, bg=CARD)
+        key_entry_frame.pack(anchor="w", padx=(24, 0), fill="x")
+        self.api_key_var = tk.StringVar()
+        self.api_key_entry = tk.Entry(
+            key_entry_frame,
+            textvariable=self.api_key_var,
+            font=("Helvetica Neue", 10),
+            bg="#f3f4f6",
+            fg=TEXT,
+            bd=0,
+            highlightbackground=BORDER,
+            highlightthickness=1,
+            relief="flat",
+            show="*",
+            width=48,
+        )
+        self.api_key_entry.pack(side="left", ipady=6, padx=(0, 8))
+
+        self._show_key = False
+        self.toggle_btn = tk.Button(
+            key_entry_frame,
+            text="Show",
+            bg="#e5e7eb",
+            fg=TEXT,
+            font=("Helvetica Neue", 9),
+            bd=0,
+            cursor="hand2",
+            relief="flat",
+            padx=8,
+            pady=4,
+            command=self._toggle_key_visibility,
+        )
+        self.toggle_btn.pack(side="left")
+
+        tk.Frame(wrapper, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(8, 10))
+
+        # Appearance section
         tk.Label(
             wrapper,
             text="Appearance & Preferences",
             bg=CARD,
             fg=TEXT,
             font=("Helvetica Neue", 13, "bold"),
-        ).pack(anchor="w", padx=16, pady=(14, 6))
+        ).pack(anchor="w", padx=16, pady=(4, 6))
         tk.Frame(wrapper, bg=BORDER, height=1).pack(fill="x", padx=16, pady=(0, 10))
 
         self.dark_mode_var = tk.BooleanVar(value=False)
@@ -99,8 +165,14 @@ class SettingsPage(Page):
             anchor="w",
         ).pack(anchor="w", padx=(24, 0))
 
+    def _toggle_key_visibility(self):
+        self._show_key = not self._show_key
+        self.api_key_entry.configure(show="" if self._show_key else "*")
+        self.toggle_btn.configure(text="Hide" if self._show_key else "Show")
+
     def load(self):
         settings = app_settings.read_settings()
+        self.api_key_var.set(settings.get("api_key", ""))
         self.dark_mode_var.set(settings.get("dark_mode", False))
         self.compact_tables_var.set(settings.get("compact_tables", False))
         self.show_filter_chips_var.set(settings.get("show_filter_chips", True))
@@ -110,6 +182,7 @@ class SettingsPage(Page):
     def _apply(self):
         updated = app_settings.write_settings(
             {
+                "api_key": self.api_key_var.get().strip(),
                 "dark_mode": self.dark_mode_var.get(),
                 "compact_tables": self.compact_tables_var.get(),
                 "show_filter_chips": self.show_filter_chips_var.get(),
@@ -125,6 +198,7 @@ class SettingsPage(Page):
 
     def _reset(self):
         defaults = app_settings.write_settings(app_settings.DEFAULT_SETTINGS)
+        self.api_key_var.set(defaults.get("api_key", ""))
         self.dark_mode_var.set(defaults["dark_mode"])
         self.compact_tables_var.set(defaults["compact_tables"])
         self.show_filter_chips_var.set(defaults["show_filter_chips"])

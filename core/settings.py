@@ -10,15 +10,22 @@ DEFAULT_SETTINGS = {
     "compact_tables": False,
     "show_filter_chips": True,
     "confirm_delete": True,
+    "api_key": "",
 }
+
+_BOOL_KEYS = {"dark_mode", "compact_tables", "show_filter_chips", "confirm_delete"}
+_STR_KEYS = {"api_key"}
 
 
 def _normalize_settings(data):
     settings = deepcopy(DEFAULT_SETTINGS)
     if isinstance(data, dict):
-        for key in settings:
+        for key in _BOOL_KEYS:
             if key in data:
                 settings[key] = bool(data[key])
+        for key in _STR_KEYS:
+            if key in data:
+                settings[key] = str(data[key])
     return settings
 
 

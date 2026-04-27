@@ -5,7 +5,7 @@ import core.settings as app_settings
 
 from .constants import ACCENT, BG, BORDER, CARD, FONT, SIDEBAR, SIDEBAR_FONT, TEXT
 from .helpers import button
-from .pages import AnalysisPage, BudgetPage, DashboardPage, SettingsPage, TagsPage, TransactionsPage
+from .pages import AnalysisPage, BudgetPage, ChatbotPage, DashboardPage, SettingsPage, TagsPage, TransactionsPage
 
 
 class BudgetApp(tk.Tk):
@@ -117,6 +117,7 @@ class BudgetApp(tk.Tk):
             ("Tags", TagsPage),
             ("Budgets", BudgetPage),
             ("Analysis", AnalysisPage),
+            ("AI Assistant", ChatbotPage),
             ("Settings", SettingsPage),
         ]
         self._pages = {}
