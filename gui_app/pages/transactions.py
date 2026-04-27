@@ -17,15 +17,15 @@ class TransactionsPage(Page):
     def build(self):
         top = tk.Frame(self, bg=BG)
         top.pack(fill="x", padx=24, pady=(18, 0))
-        tk.Label(top, text="Transactions", bg=BG, fg=TEXT, font=FONT_H).pack(side="left")
+        tk.Label(top, text="💳  Transactions", bg=BG, fg=TEXT, font=FONT_H).pack(side="left")
 
         buttons = tk.Frame(top, bg=BG)
         buttons.pack(side="right", anchor="s")
-        button(buttons, "Peer Balance Entry", self._peer_dialog, "#8b5cf6").pack(side="left", padx=4)
-        button(buttons, "+ Add Transaction", self._add_dialog, SUCCESS).pack(side="left", padx=4)
-        button(buttons, "Edit Selected", self._edit_selected, "#0ea5e9").pack(side="left", padx=4)
-        button(buttons, "↑ Import CSV", self._import_csv, ACCENT).pack(side="left", padx=4)
-        button(buttons, "Delete Selected", self._delete_selected, DANGER).pack(side="left", padx=4)
+        button(buttons, "🤝  Peer Balance", self._peer_dialog, "#8b5cf6").pack(side="left", padx=4)
+        button(buttons, "➕  Add", self._add_dialog, SUCCESS).pack(side="left", padx=4)
+        button(buttons, "✏️  Edit", self._edit_selected, "#0ea5e9").pack(side="left", padx=4)
+        button(buttons, "📥  Import CSV", self._import_csv, ACCENT).pack(side="left", padx=4)
+        button(buttons, "🗑️  Delete", self._delete_selected, DANGER).pack(side="left", padx=4)
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=24, pady=(6, 10))
 
@@ -33,7 +33,7 @@ class TransactionsPage(Page):
         search_row.pack(fill="x", padx=24, pady=(0, 8))
         tk.Label(
             search_row,
-            text="Search",
+            text="🔍  Search",
             bg=BG,
             fg=TEXT,
             font=("Helvetica Neue", 10, "bold"),
@@ -51,7 +51,7 @@ class TransactionsPage(Page):
         )
         self.search_entry.pack(side="left", fill="x", expand=True, ipady=4)
 
-        button(search_row, "Clear", self._clear_search, "#6b7280").pack(side="left", padx=(8, 8))
+        button(search_row, "✕", self._clear_search, "#6b7280").pack(side="left", padx=(8, 8))
         self._result_count_label = tk.Label(
             search_row,
             text="0 shown",

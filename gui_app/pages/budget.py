@@ -21,12 +21,12 @@ class BudgetPage(Page):
         # ── header row ───────────────────────────────────────────────────────
         top = tk.Frame(self, bg=BG)
         top.pack(fill="x", padx=24, pady=(18, 0))
-        tk.Label(top, text="Budgets", bg=BG, fg=TEXT, font=FONT_H).pack(side="left")
+        tk.Label(top, text="💰  Budgets", bg=BG, fg=TEXT, font=FONT_H).pack(side="left")
 
         buttons = tk.Frame(top, bg=BG)
         buttons.pack(side="right", anchor="s")
-        button(buttons, "+ Add Budget", self._add_dialog, SUCCESS).pack(side="left", padx=4)
-        button(buttons, "Delete Selected", self._delete_selected, DANGER).pack(side="left", padx=4)
+        button(buttons, "➕  Add", self._add_dialog, SUCCESS).pack(side="left", padx=4)
+        button(buttons, "🗑️  Delete", self._delete_selected, DANGER).pack(side="left", padx=4)
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=24, pady=(6, 6))
 

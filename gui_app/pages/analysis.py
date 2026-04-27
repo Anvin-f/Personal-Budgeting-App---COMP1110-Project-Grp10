@@ -16,7 +16,7 @@ from ..helpers import card, page_header
 
 class AnalysisPage(Page):
     def build(self):
-        page_header(self, "Analysis")
+        page_header(self, "📈  Analysis")
 
         today = datetime.today()
         self._view_mode = "month"  # "month" or "year"

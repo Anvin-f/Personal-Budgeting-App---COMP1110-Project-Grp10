@@ -112,13 +112,13 @@ class BudgetApp(tk.Tk):
         self.notebook.pack(side="left", fill="both", expand=True)
 
         page_definitions = [
-            ("Dashboard", DashboardPage),
-            ("Transactions", TransactionsPage),
-            ("Tags", TagsPage),
-            ("Budgets", BudgetPage),
-            ("Analysis", AnalysisPage),
-            ("AI Assistant", ChatbotPage),
-            ("Settings", SettingsPage),
+            ("🏠  Dashboard", DashboardPage),
+            ("💳  Transactions", TransactionsPage),
+            ("🏷️  Tags", TagsPage),
+            ("💰  Budgets", BudgetPage),
+            ("📈  Analysis", AnalysisPage),
+            ("💬  AI Assistant", ChatbotPage),
+            ("⚙️  Settings", SettingsPage),
         ]
         self._pages = {}
         for name, page_class in page_definitions:
@@ -149,7 +149,7 @@ class BudgetApp(tk.Tk):
 
         tk.Frame(sidebar, bg=self._current_palette["sidebar"]).pack(fill="both", expand=True)
         tk.Frame(sidebar, bg=self._current_palette["border"], height=1).pack(fill="x", padx=14, pady=(0, 10))
-        button(sidebar, "↻  Refresh All", self._refresh_all, color=self._current_palette["sidebar_active"], fg=self._current_palette["sidebar_text"]).pack(
+        button(sidebar, "🔄  Refresh", self._refresh_all, color=self._current_palette["sidebar_active"], fg=self._current_palette["sidebar_text"]).pack(
             fill="x",
             padx=14,
             pady=(0, 20),

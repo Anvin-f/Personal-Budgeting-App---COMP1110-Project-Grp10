@@ -13,13 +13,13 @@ class TagsPage(Page):
     def build(self):
         top = tk.Frame(self, bg=BG)
         top.pack(fill="x", padx=24, pady=(18, 0))
-        tk.Label(top, text="Tags", bg=BG, fg=TEXT, font=FONT_H).pack(side="left")
+        tk.Label(top, text="🏷️  Tags", bg=BG, fg=TEXT, font=FONT_H).pack(side="left")
 
         buttons = tk.Frame(top, bg=BG)
         buttons.pack(side="right", anchor="s")
-        button(buttons, "+ Add Tag", self._add_dialog, SUCCESS).pack(side="left", padx=4)
-        button(buttons, "Edit Selected", self._edit_selected, "#0ea5e9").pack(side="left", padx=4)
-        button(buttons, "Delete Selected", self._delete_selected, DANGER).pack(side="left", padx=4)
+        button(buttons, "➕  Add", self._add_dialog, SUCCESS).pack(side="left", padx=4)
+        button(buttons, "✏️  Edit", self._edit_selected, "#0ea5e9").pack(side="left", padx=4)
+        button(buttons, "🗑️  Delete", self._delete_selected, DANGER).pack(side="left", padx=4)
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=24, pady=(6, 10))
 

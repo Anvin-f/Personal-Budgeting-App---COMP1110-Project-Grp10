@@ -16,7 +16,7 @@ from ..helpers import capture_output, card, page_header, safe_read_tags
 
 class DashboardPage(Page):
     def build(self):
-        page_header(self, "Dashboard")
+        page_header(self, "🏠  Dashboard")
 
         # ── KPI CARDS ────────────────────────────────────────────────────
         kpi_container = tk.Frame(self, bg=BG)

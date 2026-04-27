@@ -9,7 +9,7 @@ from ..helpers import button, card, page_header
 
 class SettingsPage(Page):
     def build(self):
-        page_header(self, "Settings")
+        page_header(self, "⚙️  Settings")
 
         wrapper = card(self)
         wrapper.pack(fill="both", expand=True, padx=24, pady=(12, 18))
@@ -130,8 +130,8 @@ class SettingsPage(Page):
 
         btn_row = tk.Frame(wrapper, bg=CARD)
         btn_row.pack(anchor="w", padx=16, pady=(12, 16))
-        button(btn_row, "Apply Settings", self._apply, "#3b82f6").pack(side="left", padx=(0, 8))
-        button(btn_row, "Reset Defaults", self._reset, "#6b7280").pack(side="left")
+        button(btn_row, "✅  Apply", self._apply, "#3b82f6").pack(side="left", padx=(0, 8))
+        button(btn_row, "🔄  Reset", self._reset, "#6b7280").pack(side="left")
 
     def _check(self, parent, title, description, variable):
         row = tk.Frame(parent, bg=CARD)
