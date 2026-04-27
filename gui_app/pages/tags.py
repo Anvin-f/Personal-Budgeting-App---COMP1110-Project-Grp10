@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+import core.settings as app_settings
 import core.tags as tags
 
 from ..base import Page
@@ -53,8 +54,9 @@ class TagsPage(Page):
             return
         row = self.tree.item(selection[0], "values")
         tag_id = str(row[0])
-        if not messagebox.askyesno("Confirm Delete", f"Delete tag '{row[1]} – {row[2]}'?"):
-            return
+        if app_settings.read_settings().get("confirm_delete", True):
+            if not messagebox.askyesno("Confirm Delete", f"Delete tag '{row[1]} – {row[2]}'?"):
+                return
         try:
             tags.id_delete_tag(tag_id)
         except Exception as exc:

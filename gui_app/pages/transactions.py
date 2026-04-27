@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 import core.adjustments as adjustments
+import core.settings as app_settings
 import core.transaction as transaction
 
 from ..base import Page
@@ -104,6 +105,7 @@ class TransactionsPage(Page):
 
         chips_row = tk.Frame(self, bg=BG)
         chips_row.pack(fill="x", padx=24, pady=(0, 8))
+        self.chips_row = chips_row
         tk.Label(
             chips_row,
             text="Active Filters",
@@ -149,8 +151,15 @@ class TransactionsPage(Page):
             transactions = transaction._load_transactions()
             assignments = transaction._load_assignments()
             tag_dict = safe_read_tags()
+            settings = app_settings.read_settings()
         except Exception:
             return
+
+        show_chips = settings.get("show_filter_chips", True)
+        if show_chips:
+            self.chips_row.pack(fill="x", padx=24, pady=(0, 8))
+        else:
+            self.chips_row.pack_forget()
 
         tag_map = defaultdict(list)
         for assignment in assignments:
@@ -210,6 +219,8 @@ class TransactionsPage(Page):
         if not hasattr(self, "_all_rows"):
             return
 
+        settings = app_settings.read_settings()
+
         query = self.search_var.get().strip().lower()
         terms = [term for term in query.split() if term]
 
@@ -259,7 +270,10 @@ class TransactionsPage(Page):
             filtered.append(row)
 
         self._render_rows(filtered)
-        self._render_active_filter_chips(active_chips)
+        if settings.get("show_filter_chips", True):
+            self._render_active_filter_chips(active_chips)
+        else:
+            self._render_active_filter_chips([])
 
     def _clear_search(self):
         self.search_var.set("")
@@ -343,8 +357,9 @@ class TransactionsPage(Page):
             return
         row = self.tree.item(selection[0], "values")
         transaction_id, name = str(row[0]), row[2]
-        if not messagebox.askyesno("Confirm Delete", f"Delete transaction #{transaction_id} '{name}'?"):
-            return
+        if app_settings.read_settings().get("confirm_delete", True):
+            if not messagebox.askyesno("Confirm Delete", f"Delete transaction #{transaction_id} '{name}'?"):
+                return
         transactions = transaction._load_transactions()
         assignments = transaction._load_assignments()
         transaction._save_transactions([item for item in transactions if item["ID"] != transaction_id])
