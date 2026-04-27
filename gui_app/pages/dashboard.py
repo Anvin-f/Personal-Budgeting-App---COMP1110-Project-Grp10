@@ -1,6 +1,6 @@
 import tkinter as tk
 from datetime import datetime, timedelta
-from tkinter import scrolledtext
+from tkinter import ttk
 
 import core.alerts as alerts
 
@@ -31,18 +31,80 @@ class DashboardPage(Page):
         alert_card = card(self)
         alert_card.pack(fill="both", expand=True, padx=24, pady=(0, 18))
 
-        self.alert_box = scrolledtext.ScrolledText(
-            alert_card,
-            font=FONT_SM,
-            bg=CARD,
-            fg=TEXT,
-            relief="flat",
-            wrap="word",
-            state="disabled",
-            padx=8,
-            pady=8,
+        header = tk.Frame(alert_card, bg=CARD)
+        header.pack(fill="x", padx=12, pady=(12, 8))
+
+        self._total_chip = self._alert_chip(header, "Total", ACCENT)
+        self._alert_chip(header, "", CARD).pack_forget()
+        self._warning_chip = self._alert_chip(header, "Warnings", "#f59e0b")
+        self._ok_chip = self._alert_chip(header, "OK", SUCCESS)
+        self._info_chip = self._alert_chip(header, "Info", MUTED)
+
+        table_wrap = tk.Frame(alert_card, bg=CARD)
+        table_wrap.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+
+        columns = ("severity", "message")
+        self.alert_tree = ttk.Treeview(table_wrap, columns=columns, show="headings", height=8)
+        self.alert_tree.heading("severity", text="Severity")
+        self.alert_tree.heading("message", text="Message")
+        self.alert_tree.column("severity", width=120, anchor="center")
+        self.alert_tree.column("message", width=840, anchor="w")
+
+        self.alert_tree.tag_configure("warning", background="#fff7ed", foreground="#9a3412")
+        self.alert_tree.tag_configure("alert", background="#fef2f2", foreground="#991b1b")
+        self.alert_tree.tag_configure("ok", background="#ecfdf5", foreground="#065f46")
+        self.alert_tree.tag_configure("info", background="#f8fafc", foreground="#334155")
+
+        scrollbar = ttk.Scrollbar(table_wrap, orient="vertical", command=self.alert_tree.yview)
+        self.alert_tree.configure(yscrollcommand=scrollbar.set)
+        self.alert_tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+    def _alert_chip(self, parent, label, color):
+        chip = tk.Frame(parent, bg="#f8fafc", highlightbackground="#e5e7eb", highlightthickness=1)
+        chip.pack(side="left", padx=(0, 8))
+        tk.Label(chip, text=label.upper(), bg="#f8fafc", fg=MUTED, font=("Helvetica Neue", 8, "bold")).pack(
+            padx=10,
+            pady=(6, 0),
         )
-        self.alert_box.pack(fill="both", expand=True)
+        value = tk.Label(chip, text="0", bg="#f8fafc", fg=color, font=("Helvetica Neue", 14, "bold"))
+        value.pack(padx=10, pady=(0, 6))
+        return value
+
+    def _parse_alert_lines(self, output):
+        parsed = []
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("===") or line.startswith("---"):
+                continue
+            if line.startswith("[") and "]" in line:
+                severity = line[1 : line.index("]")].strip().lower()
+                message = line[line.index("]") + 1 :].strip()
+                parsed.append((severity or "info", message or line))
+            else:
+                parsed.append(("info", line))
+        return parsed
+
+    def _render_alerts(self, output):
+        lines = self._parse_alert_lines(output)
+        if not lines:
+            lines = [("ok", "No active alerts. You are all set.")]
+
+        self.alert_tree.delete(*self.alert_tree.get_children())
+
+        totals = {"alert": 0, "warning": 0, "ok": 0, "info": 0}
+        for severity, message in lines:
+            normalized = severity if severity in totals else "info"
+            totals[normalized] += 1
+            self.alert_tree.insert("", "end", values=(normalized.upper(), message), tags=(normalized,))
+
+        total_count = sum(totals.values())
+        self._total_chip.config(text=str(total_count))
+        self._warning_chip.config(text=str(totals["warning"] + totals["alert"]))
+        self._ok_chip.config(text=str(totals["ok"]))
+        self._info_chip.config(text=str(totals["info"]))
 
     def _stat_card(self, parent, label, accent_color):
         outer = tk.Frame(parent, bg=accent_color)
@@ -100,7 +162,4 @@ class DashboardPage(Page):
         self._safe_val.config(text=f"HK${safe_day:.2f}", fg=SUCCESS if safe_day >= 0 else DANGER)
 
         output = capture_output(alerts.check_all_alerts)
-        self.alert_box.config(state="normal")
-        self.alert_box.delete("1.0", "end")
-        self.alert_box.insert("end", output or "No alerts.")
-        self.alert_box.config(state="disabled")
+        self._render_alerts(output)
