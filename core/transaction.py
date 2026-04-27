@@ -178,7 +178,7 @@ def _assign_tags_to_transaction(transaction_id, tags):
     while True:
         tag_id_input = input(f"\nEnter TagID(s) to tag transaction #{transaction_id} (separated by ';' if multiple, e.g. '1;2') or press Enter to skip: ").strip().split(';')
         
-        if not tag_id_input:
+        if tag_id_input == ['']:
             print("No tags assigned.")
             break
 
