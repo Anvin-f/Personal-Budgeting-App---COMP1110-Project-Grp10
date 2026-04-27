@@ -23,6 +23,7 @@ class TransactionsPage(Page):
         buttons.pack(side="right", anchor="s")
         button(buttons, "Peer Balance Entry", self._peer_dialog, "#8b5cf6").pack(side="left", padx=4)
         button(buttons, "+ Add Transaction", self._add_dialog, SUCCESS).pack(side="left", padx=4)
+        button(buttons, "Edit Selected", self._edit_selected, "#0ea5e9").pack(side="left", padx=4)
         button(buttons, "↑ Import CSV", self._import_csv, ACCENT).pack(side="left", padx=4)
         button(buttons, "Delete Selected", self._delete_selected, DANGER).pack(side="left", padx=4)
 
@@ -145,6 +146,7 @@ class TransactionsPage(Page):
         self.tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side="right", fill="y")
         self.tree.pack(fill="both", expand=True)
+        self.tree.bind("<Double-1>", lambda _event: self._edit_selected())
 
     def load(self):
         try:
@@ -368,6 +370,15 @@ class TransactionsPage(Page):
 
     def _add_dialog(self):
         AddTransactionDialog(self, on_save=self.load)
+
+    def _edit_selected(self):
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showwarning("No selection", "Select a transaction to edit.")
+            return
+        row = self.tree.item(selection[0], "values")
+        transaction_id = str(row[0])
+        EditTransactionDialog(self, transaction_id=transaction_id, on_save=self.load)
 
     def _peer_dialog(self):
         AddPeerBalanceDialog(self, on_save=self.load)
@@ -839,5 +850,109 @@ class AddPeerBalanceDialog(tk.Toplevel):
             messagebox.showerror("Error", str(exc), parent=self)
             return
 
+        self.on_save()
+        self.destroy()
+
+
+class EditTransactionDialog(tk.Toplevel):
+    def __init__(self, parent, transaction_id, on_save):
+        super().__init__(parent)
+        self.transaction_id = str(transaction_id)
+        self.on_save = on_save
+        self.title("Edit Transaction")
+        self.geometry("440x440")
+        self.configure(bg=BG)
+        self.resizable(False, False)
+        self.grab_set()
+
+        transaction_row = self._load_transaction()
+        if not transaction_row:
+            messagebox.showerror("Error", "Transaction not found.", parent=self)
+            self.destroy()
+            return
+
+        tk.Label(self, text=f"Edit Transaction #{self.transaction_id}", bg=BG, fg=TEXT, font=FONT_H).pack(
+            anchor="w",
+            padx=28,
+            pady=(20, 4),
+        )
+        tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=28, pady=(0, 12))
+
+        form = tk.Frame(self, bg=BG)
+        form.pack(padx=28, fill="x")
+
+        self.date_var = tk.StringVar(value=transaction_row.get("Date", ""))
+        self.name_var = tk.StringVar(value=transaction_row.get("Name", ""))
+        self.desc_var = tk.StringVar(value=transaction_row.get("Transaction Description", ""))
+        self.amount_var = tk.StringVar(value=transaction_row.get("Amount", ""))
+
+        fields = [
+            ("Date (YYYY-MM-DD)", self.date_var),
+            ("Name", self.name_var),
+            ("Description (optional)", self.desc_var),
+            ("Amount (HK$)", self.amount_var),
+        ]
+        for label, variable in fields:
+            tk.Label(
+                form,
+                text=label,
+                bg=BG,
+                fg=TEXT,
+                font=("Helvetica Neue", 10, "bold"),
+                anchor="w",
+            ).pack(fill="x", pady=(10, 3))
+            tk.Entry(
+                form,
+                textvariable=variable,
+                font=FONT,
+                relief="solid",
+                bd=1,
+                highlightthickness=0,
+            ).pack(fill="x", ipady=5)
+
+        button_row = tk.Frame(self, bg=BG)
+        button_row.pack(pady=22)
+        button(button_row, "Save Changes", self._save, SUCCESS).pack(side="left", padx=6)
+        button(button_row, "Cancel", self.destroy, DANGER).pack(side="left", padx=6)
+
+    def _load_transaction(self):
+        for row in transaction._load_transactions():
+            if str(row.get("ID", "")) == self.transaction_id:
+                return row
+        return None
+
+    def _save(self):
+        date_value = self.date_var.get().strip()
+        name = self.name_var.get().strip()
+        description = self.desc_var.get().strip()
+        amount = self.amount_var.get().strip()
+
+        if not transaction._validate_date(date_value):
+            messagebox.showerror("Error", "Invalid date. Use YYYY-MM-DD.", parent=self)
+            return
+        if not name:
+            messagebox.showerror("Error", "Name cannot be empty.", parent=self)
+            return
+        if transaction._validate_amount(amount) is None:
+            messagebox.showerror("Error", "Amount must be a positive number.", parent=self)
+            return
+
+        transactions = transaction._load_transactions()
+        updated = False
+        for row in transactions:
+            if str(row.get("ID", "")) != self.transaction_id:
+                continue
+            row["Date"] = date_value
+            row["Name"] = name
+            row["Transaction Description"] = description
+            row["Amount"] = amount
+            updated = True
+            break
+
+        if not updated:
+            messagebox.showerror("Error", "Transaction not found.", parent=self)
+            return
+
+        transaction._save_transactions(transactions)
         self.on_save()
         self.destroy()

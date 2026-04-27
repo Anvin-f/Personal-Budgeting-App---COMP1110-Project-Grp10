@@ -2,6 +2,7 @@ import io
 import sys
 import tkinter as tk
 
+import core.settings as app_settings
 import core.tags as tags
 
 from .constants import ACCENT, BG, BORDER, CARD, FONT_H, TEXT
@@ -70,8 +71,18 @@ def safe_float(value, default=0.0):
 
 
 def zebra(tree):
-    tree.tag_configure("odd", background="#f9fafb")
-    tree.tag_configure("even", background=CARD)
+    dark_mode = app_settings.read_settings().get("dark_mode", False)
+    if dark_mode:
+        odd_bg = "#263247"
+        even_bg = "#1e293b"
+        row_fg = "#e2e8f0"
+    else:
+        odd_bg = "#f9fafb"
+        even_bg = CARD
+        row_fg = TEXT
+
+    tree.tag_configure("odd", background=odd_bg, foreground=row_fg)
+    tree.tag_configure("even", background=even_bg, foreground=row_fg)
 
 
 def repaint_tree(tree):
