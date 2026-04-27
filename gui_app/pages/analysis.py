@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import ttk
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -211,17 +211,100 @@ class AnalysisPage(Page):
         ).pack(anchor="w", padx=14, pady=(14, 4))
         tk.Frame(text_card, bg=BORDER, height=1).pack(fill="x", padx=14, pady=(0, 6))
 
-        self.summary_box = scrolledtext.ScrolledText(
-            text_card,
-            font=FONT_SM,
-            bg=CARD,
-            fg=TEXT,
-            relief="flat",
-            wrap="word",
-            state="disabled",
-            padx=8,
+        metrics_row = tk.Frame(text_card, bg=CARD)
+        metrics_row.pack(fill="x", padx=10, pady=(2, 8))
+
+        self._metric_values = {}
+        metric_specs = [
+            ("regular", "Regular Total", "#3b82f6"),
+            ("irregular", "Irregular", "#f59e0b"),
+            ("net", "Balance Net", "#10b981"),
+            ("scope", "Scope", "#8b5cf6"),
+        ]
+        for key, title, accent in metric_specs:
+            metric_card = tk.Frame(metrics_row, bg="#f8fafc", highlightbackground=BORDER, highlightthickness=1)
+            metric_card.pack(side="left", fill="both", expand=True, padx=4)
+            tk.Label(
+                metric_card,
+                text=title,
+                bg="#f8fafc",
+                fg=MUTED,
+                font=("Helvetica Neue", 8, "bold"),
+            ).pack(anchor="w", padx=8, pady=(6, 0))
+            value_label = tk.Label(
+                metric_card,
+                text="-",
+                bg="#f8fafc",
+                fg=accent,
+                font=("Helvetica Neue", 10, "bold"),
+            )
+            value_label.pack(anchor="w", padx=8, pady=(0, 6))
+            self._metric_values[key] = value_label
+
+        self.summary_tabs = ttk.Notebook(text_card)
+        self.summary_tabs.pack(fill="both", expand=True, padx=8, pady=(0, 10))
+
+        breakdown_tab = tk.Frame(self.summary_tabs, bg=CARD)
+        adjustments_tab = tk.Frame(self.summary_tabs, bg=CARD)
+        peers_tab = tk.Frame(self.summary_tabs, bg=CARD)
+        self.summary_tabs.add(breakdown_tab, text="Breakdown")
+        self.summary_tabs.add(adjustments_tab, text="Adjustments")
+        self.summary_tabs.add(peers_tab, text="Peers")
+
+        self.summary_breakdown_tree = ttk.Treeview(
+            breakdown_tab,
+            columns=("item", "amount", "share", "note"),
+            show="headings",
+            height=9,
         )
-        self.summary_box.pack(fill="both", expand=True, padx=6, pady=(0, 14))
+        self.summary_breakdown_tree.heading("item", text="Item")
+        self.summary_breakdown_tree.heading("amount", text="Amount")
+        self.summary_breakdown_tree.heading("share", text="Share")
+        self.summary_breakdown_tree.heading("note", text="Note")
+        self.summary_breakdown_tree.column("item", width=130, anchor="w")
+        self.summary_breakdown_tree.column("amount", width=90, anchor="e")
+        self.summary_breakdown_tree.column("share", width=70, anchor="center")
+        self.summary_breakdown_tree.column("note", width=120, anchor="w")
+        breakdown_scroll = ttk.Scrollbar(breakdown_tab, orient="vertical", command=self.summary_breakdown_tree.yview)
+        self.summary_breakdown_tree.configure(yscrollcommand=breakdown_scroll.set)
+        self.summary_breakdown_tree.pack(side="left", fill="both", expand=True)
+        breakdown_scroll.pack(side="right", fill="y")
+
+        self.summary_adjust_tree = ttk.Treeview(
+            adjustments_tab,
+            columns=("metric", "amount", "status"),
+            show="headings",
+            height=9,
+        )
+        self.summary_adjust_tree.heading("metric", text="Metric")
+        self.summary_adjust_tree.heading("amount", text="Amount")
+        self.summary_adjust_tree.heading("status", text="Status")
+        self.summary_adjust_tree.column("metric", width=160, anchor="w")
+        self.summary_adjust_tree.column("amount", width=110, anchor="e")
+        self.summary_adjust_tree.column("status", width=110, anchor="center")
+        adjust_scroll = ttk.Scrollbar(adjustments_tab, orient="vertical", command=self.summary_adjust_tree.yview)
+        self.summary_adjust_tree.configure(yscrollcommand=adjust_scroll.set)
+        self.summary_adjust_tree.pack(side="left", fill="both", expand=True)
+        adjust_scroll.pack(side="right", fill="y")
+
+        self.summary_peer_tree = ttk.Treeview(
+            peers_tab,
+            columns=("peer", "period_net", "all_time_net", "trend"),
+            show="headings",
+            height=9,
+        )
+        self.summary_peer_tree.heading("peer", text="Peer")
+        self.summary_peer_tree.heading("period_net", text="Selected")
+        self.summary_peer_tree.heading("all_time_net", text="All Time")
+        self.summary_peer_tree.heading("trend", text="Trend")
+        self.summary_peer_tree.column("peer", width=110, anchor="w")
+        self.summary_peer_tree.column("period_net", width=90, anchor="e")
+        self.summary_peer_tree.column("all_time_net", width=90, anchor="e")
+        self.summary_peer_tree.column("trend", width=90, anchor="center")
+        peer_scroll = ttk.Scrollbar(peers_tab, orient="vertical", command=self.summary_peer_tree.yview)
+        self.summary_peer_tree.configure(yscrollcommand=peer_scroll.set)
+        self.summary_peer_tree.pack(side="left", fill="both", expand=True)
+        peer_scroll.pack(side="right", fill="y")
 
     def _set_view_mode(self, mode):
         self._view_mode = mode
@@ -464,6 +547,7 @@ class AnalysisPage(Page):
         irregular_year = 0.0
         balance_year_out = 0.0
         balance_year_in = 0.0
+        peer_year_balances = {}
 
         for row in transactions:
             try:
@@ -482,11 +566,22 @@ class AnalysisPage(Page):
             if is_irregular:
                 irregular_year += amount
             if is_balance:
+                peer_name = "Unknown"
+                for t in tags_list:
+                    tag_name = t.get("Tag_name", "")
+                    if tag_name.startswith(adjustments.PEER_TAG_PREFIX):
+                        peer_name = tag_name[len(adjustments.PEER_TAG_PREFIX) :].strip() or "Unknown"
+                        break
+
+                peer_entry = peer_year_balances.setdefault(peer_name, {"out": 0.0, "in": 0.0, "net": 0.0})
                 name_text = (row.get("Name") or "").strip().lower()
                 if name_text.startswith("balance in"):
                     balance_year_in += amount
+                    peer_entry["in"] += amount
                 else:
                     balance_year_out += amount
+                    peer_entry["out"] += amount
+                peer_entry["net"] = peer_entry["out"] - peer_entry["in"]
 
             if is_balance or is_irregular:
                 continue
@@ -498,9 +593,11 @@ class AnalysisPage(Page):
             monthly_detail[m][cat] += amount
 
         self._draw_year_charts(by_month, by_category_year, year, MONTH_NAMES)
+        peer_balances = adjustments.calculate_peer_balances()
         self._draw_year_summary(
             year, by_month, by_category_year, monthly_detail,
-            irregular_year, balance_year_out, balance_year_in, MONTH_NAMES
+            irregular_year, balance_year_out, balance_year_in,
+            peer_year_balances, peer_balances, MONTH_NAMES
         )
 
     _PIE_COLORS = [
@@ -596,36 +693,64 @@ class AnalysisPage(Page):
 
     def _draw_year_summary(
         self, year, by_month, by_category_year, monthly_detail,
-        irregular_year, balance_year_out, balance_year_in, month_names
+        irregular_year, balance_year_out, balance_year_in,
+        peer_year_balances, peer_balances, month_names
     ):
-        body = [f"YEARLY SPENDING - {year}"]
         year_total = sum(by_month.values())
-        body.append(f"Total Regular Spending: HK${year_total:.2f}")
-        body.append("")
-        body.append("MONTHLY BREAKDOWN")
+        net_balance = balance_year_out - balance_year_in
+        active_months = sum(1 for i in range(12) if by_month.get(i, 0.0) > 0)
+
+        self._set_summary_metrics(
+            regular=year_total,
+            irregular=irregular_year,
+            net=net_balance,
+            scope=f"{active_months} active months",
+        )
+        self._clear_summary_tables()
+
         for i, mname in enumerate(month_names):
             m_total = by_month.get(i, 0.0)
-            body.append(f"  {mname}: HK${m_total:.2f}")
-            for cat, amt in sorted(monthly_detail[i].items(), key=lambda x: x[1], reverse=True):
-                body.append(f"    {cat}: HK${amt:.2f}")
-        body.append("")
-        body.append(f"TOP CATEGORIES - {year}")
-        if by_category_year:
-            for cat, amt in sorted(by_category_year.items(), key=lambda x: x[1], reverse=True):
-                body.append(f"  {cat}: HK${amt:.2f}")
-        else:
-            body.append("  No transactions")
-        body.append("")
-        body.append(f"ADJUSTMENTS - {year}")
-        body.append(f"Irregular Expenses: HK${irregular_year:.2f}")
-        body.append(f"Balance Out: HK${balance_year_out:.2f}")
-        body.append(f"Balance In: HK${balance_year_in:.2f}")
-        body.append(f"Net Peer Balance: HK${(balance_year_out - balance_year_in):.2f}")
+            if m_total <= 0:
+                continue
+            pct = (m_total / year_total * 100) if year_total > 0 else 0
+            top_cat = "-"
+            if monthly_detail[i]:
+                top_cat = max(monthly_detail[i].items(), key=lambda item: item[1])[0]
+            self.summary_breakdown_tree.insert(
+                "",
+                "end",
+                values=(mname, f"HK${m_total:.2f}", f"{pct:.1f}%", top_cat),
+            )
 
-        self.summary_box.config(state="normal")
-        self.summary_box.delete("1.0", "end")
-        self.summary_box.insert("end", "\n".join(body))
-        self.summary_box.config(state="disabled")
+        if not self.summary_breakdown_tree.get_children():
+            self.summary_breakdown_tree.insert("", "end", values=("No data", "-", "-", "-"))
+
+        adjustments_rows = [
+            ("Irregular Expenses", irregular_year, "Warning" if irregular_year > 0 else "OK"),
+            ("Balance Out", balance_year_out, "Outgoing"),
+            ("Balance In", balance_year_in, "Incoming"),
+            ("Net Balance", net_balance, "High" if net_balance > 500 else "Normal"),
+        ]
+        for metric, amount, status in adjustments_rows:
+            self.summary_adjust_tree.insert("", "end", values=(metric, f"HK${amount:.2f}", status))
+
+        merged_peers = set(peer_year_balances.keys()) | set(peer_balances.keys())
+        for peer in sorted(merged_peers, key=str.lower):
+            year_net = peer_year_balances.get(peer, {}).get("net", 0.0)
+            all_time_net = peer_balances.get(peer, {}).get("net", 0.0)
+            trend = "Owed" if all_time_net > 0 else ("Credit" if all_time_net < 0 else "Balanced")
+            self.summary_peer_tree.insert(
+                "",
+                "end",
+                values=(peer, f"HK${year_net:.2f}", f"HK${all_time_net:.2f}", trend),
+            )
+
+        if not self.summary_peer_tree.get_children():
+            self.summary_peer_tree.insert("", "end", values=("No peers", "-", "-", "-"))
+
+        self.summary_tabs.tab(0, text="Monthly Totals")
+        self.summary_tabs.tab(1, text="Adjustments")
+        self.summary_tabs.tab(2, text="Peer Balances")
 
     def _draw_charts(self, by_category_month, per_day, selected_month):
         self.fig.clear()
@@ -728,54 +853,70 @@ class AnalysisPage(Page):
         peer_month_balances,
         peer_balances,
     ):
-        def section(title, total, categories):
-            lines = [title, f"Total: HK${total:.2f}"]
-            if categories:
-                for name, amount in sorted(categories.items(), key=lambda item: item[1], reverse=True):
-                    lines.append(f"  {name}: HK${amount:.2f}")
-            else:
-                lines.append("  No transactions")
-            return lines
+        month_label = selected_month.strftime("%b %Y")
+        net_balance = balance_month_out - balance_month_in
 
-        month_label = selected_month.strftime("%B %Y").upper()
-        body = section(f"REGULAR SPENDING - {month_label}", total_month, by_category_month)
+        self._set_summary_metrics(
+            regular=total_month,
+            irregular=irregular_month_total,
+            net=net_balance,
+            scope=month_label,
+        )
+        self._clear_summary_tables()
 
-        if by_category_month:
-            body.append("")
-            body.append(f"TOP 3 CATEGORIES ({month_label})")
-            for name, amount in sorted(by_category_month.items(), key=lambda item: item[1], reverse=True)[:3]:
-                body.append(f"  {name}: HK${amount:.2f}")
+        sorted_categories = sorted(by_category_month.items(), key=lambda x: x[1], reverse=True)
+        for name, amount in sorted_categories:
+            pct = (amount / total_month * 100) if total_month > 0 else 0
+            note = "Top" if pct >= 25 else "Tracked"
+            self.summary_breakdown_tree.insert(
+                "",
+                "end",
+                values=(name, f"HK${amount:.2f}", f"{pct:.1f}%", note),
+            )
 
-        body.append("")
-        body.append(f"ADJUSTMENTS ({month_label})")
-        body.append(f"Irregular Expenses: HK${irregular_month_total:.2f}")
-        body.append(f"Balance Out: HK${balance_month_out:.2f}")
-        body.append(f"Balance In: HK${balance_month_in:.2f}")
-        body.append(f"Net Peer Balance: HK${(balance_month_out - balance_month_in):.2f}")
+        if not self.summary_breakdown_tree.get_children():
+            self.summary_breakdown_tree.insert("", "end", values=("No categories", "-", "-", "-"))
 
-        body.append("")
-        body.append(f"PEER BALANCES ({month_label})")
-        if peer_month_balances:
-            for peer, values in sorted(peer_month_balances.items(), key=lambda item: item[0].lower()):
-                body.append(
-                    f"  {peer}: Out HK${values['out']:.2f}, "
-                    f"In HK${values['in']:.2f}, Net HK${values['net']:.2f}"
-                )
-        else:
-            body.append("  No peer balance adjustments in this month")
+        adjustments_rows = [
+            ("Irregular Expenses", irregular_month_total, "Warning" if irregular_month_total > 0 else "OK"),
+            ("Balance Out", balance_month_out, "Outgoing"),
+            ("Balance In", balance_month_in, "Incoming"),
+            ("Net Balance", net_balance, "High" if net_balance > 500 else "Normal"),
+        ]
+        for metric, amount, status in adjustments_rows:
+            self.summary_adjust_tree.insert("", "end", values=(metric, f"HK${amount:.2f}", status))
 
-        body.append("")
-        body.append("PEER BALANCES (ALL TIME)")
-        if peer_balances:
-            for peer, values in sorted(peer_balances.items(), key=lambda item: item[0].lower()):
-                body.append(
-                    f"  {peer}: Out HK${values['out']:.2f}, "
-                    f"In HK${values['in']:.2f}, Net HK${values['net']:.2f}"
-                )
-        else:
-            body.append("  No peer balance adjustments")
+        merged_peers = set(peer_month_balances.keys()) | set(peer_balances.keys())
+        for peer in sorted(merged_peers, key=str.lower):
+            period_net = peer_month_balances.get(peer, {}).get("net", 0.0)
+            all_time_net = peer_balances.get(peer, {}).get("net", 0.0)
+            trend = "Owed" if all_time_net > 0 else ("Credit" if all_time_net < 0 else "Balanced")
+            self.summary_peer_tree.insert(
+                "",
+                "end",
+                values=(peer, f"HK${period_net:.2f}", f"HK${all_time_net:.2f}", trend),
+            )
 
-        self.summary_box.config(state="normal")
-        self.summary_box.delete("1.0", "end")
-        self.summary_box.insert("end", "\n".join(body))
-        self.summary_box.config(state="disabled")
+        if not self.summary_peer_tree.get_children():
+            self.summary_peer_tree.insert("", "end", values=("No peers", "-", "-", "-"))
+
+        self.summary_tabs.tab(0, text="Categories")
+        self.summary_tabs.tab(1, text="Adjustments")
+        self.summary_tabs.tab(2, text="Peer Balances")
+
+    def _clear_summary_tables(self):
+        self.summary_breakdown_tree.delete(*self.summary_breakdown_tree.get_children())
+        self.summary_adjust_tree.delete(*self.summary_adjust_tree.get_children())
+        self.summary_peer_tree.delete(*self.summary_peer_tree.get_children())
+
+    def _set_summary_metrics(self, regular, irregular, net, scope):
+        self._metric_values["regular"].config(text=f"HK${regular:.2f}", fg="#3b82f6")
+        self._metric_values["irregular"].config(
+            text=f"HK${irregular:.2f}",
+            fg="#f59e0b" if irregular > 0 else "#10b981",
+        )
+        self._metric_values["net"].config(
+            text=f"HK${net:.2f}",
+            fg="#ef4444" if net > 500 else ("#f59e0b" if net > 0 else "#10b981"),
+        )
+        self._metric_values["scope"].config(text=scope, fg="#8b5cf6")
