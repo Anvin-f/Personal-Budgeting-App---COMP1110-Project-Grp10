@@ -20,6 +20,7 @@ class AnalysisPage(Page):
 
         today = datetime.today()
         self._view_mode = "month"  # "month" or "year"
+        self._chart_type = "bar"   # "bar" or "pie"
         self._selected_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         self._selected_year = today.year
         self._min_month = self._selected_month
@@ -31,7 +32,7 @@ class AnalysisPage(Page):
         nav = tk.Frame(self, bg=BG)
         nav.pack(fill="x", padx=24, pady=(10, 0))
 
-        # Toggle buttons: Month | Year
+        # Toggle buttons: Month | Year  +  Bar | Pie
         toggle_frame = tk.Frame(nav, bg=BG)
         toggle_frame.pack(side="right", padx=(8, 0))
 
@@ -64,6 +65,39 @@ class AnalysisPage(Page):
             command=lambda: self._set_view_mode("year"),
         )
         self._year_toggle.pack(side="left")
+
+        # Divider
+        tk.Frame(toggle_frame, bg=BORDER, width=1, height=20).pack(side="left", padx=8)
+
+        self._bar_toggle = tk.Button(
+            toggle_frame,
+            text="Bar",
+            font=("Helvetica Neue", 9, "bold"),
+            bg="#3b82f6",
+            fg="white",
+            relief="flat",
+            bd=0,
+            padx=10,
+            pady=5,
+            cursor="hand2",
+            command=lambda: self._set_chart_type("bar"),
+        )
+        self._bar_toggle.pack(side="left", padx=(0, 2))
+
+        self._pie_toggle = tk.Button(
+            toggle_frame,
+            text="Pie",
+            font=("Helvetica Neue", 9, "bold"),
+            bg="#e5e7eb",
+            fg=TEXT,
+            relief="flat",
+            bd=0,
+            padx=10,
+            pady=5,
+            cursor="hand2",
+            command=lambda: self._set_chart_type("pie"),
+        )
+        self._pie_toggle.pack(side="left")
 
         # ── Month navigation ─────────────────────────────────────────────────
         self._month_nav_frame = tk.Frame(nav, bg=BG)
@@ -201,6 +235,16 @@ class AnalysisPage(Page):
             self._month_toggle.config(bg="#e5e7eb", fg=TEXT)
             self._month_nav_frame.pack_forget()
             self._year_nav_frame.pack(side="left")
+        self.load()
+
+    def _set_chart_type(self, chart_type):
+        self._chart_type = chart_type
+        if chart_type == "bar":
+            self._bar_toggle.config(bg="#3b82f6", fg="white")
+            self._pie_toggle.config(bg="#e5e7eb", fg=TEXT)
+        else:
+            self._pie_toggle.config(bg="#3b82f6", fg="white")
+            self._bar_toggle.config(bg="#e5e7eb", fg=TEXT)
         self.load()
 
     def _shift_month(self, value, delta):
@@ -459,50 +503,93 @@ class AnalysisPage(Page):
             irregular_year, balance_year_out, balance_year_in, MONTH_NAMES
         )
 
+    _PIE_COLORS = [
+        "#3b82f6", "#10b981", "#f59e0b", "#ef4444",
+        "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16",
+        "#f97316", "#14b8a6", "#a855f7", "#64748b",
+    ]
+
     def _draw_year_charts(self, by_month, by_category_year, year, month_names):
-        self.ax1.cla()
-        self.ax2.cla()
+        self.fig.clear()
+        self.ax1 = self.fig.add_subplot(211)
+        self.ax2 = self.fig.add_subplot(212)
         self.fig.patch.set_facecolor(CARD)
-        for axis in (self.ax1, self.ax2):
-            axis.set_facecolor("#f9fafb")
-            axis.spines["top"].set_visible(False)
-            axis.spines["right"].set_visible(False)
-            axis.spines["left"].set_color(BORDER)
-            axis.spines["bottom"].set_color(BORDER)
 
-        # Chart 1: monthly totals
         amounts = [by_month.get(i, 0.0) for i in range(12)]
-        bars = self.ax1.bar(month_names, amounts, color="#3b82f6", edgecolor="none", zorder=2, width=0.6)
-        self.ax1.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
-        if any(a > 0 for a in amounts):
-            max_a = max(amounts)
-            for bar, amount in zip(bars, amounts):
-                if amount > 0:
-                    self.ax1.text(
-                        bar.get_x() + bar.get_width() / 2,
-                        bar.get_height() + max_a * 0.015,
-                        f"${amount:.0f}",
-                        ha="center", va="bottom", fontsize=7, color=TEXT, fontweight="bold",
-                    )
-        self.ax1.set_title(f"Monthly Spending - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
-        self.ax1.set_ylabel("HK$", fontsize=9, color=MUTED)
-        self.ax1.tick_params(axis="x", rotation=0, labelsize=8, colors=TEXT)
-        self.ax1.tick_params(axis="y", labelsize=8, colors=MUTED)
+        has_data = any(a > 0 for a in amounts)
 
-        # Chart 2: top categories for year
-        if by_category_year:
-            sorted_cats = sorted(by_category_year.items(), key=lambda x: x[1], reverse=True)[:6]
-            cat_labels = [c for c, _ in sorted_cats]
-            cat_amounts = [a for _, a in sorted_cats]
-            self.ax2.bar(cat_labels, cat_amounts, color="#10b981", edgecolor="none", zorder=2, width=0.55)
-            self.ax2.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
+        if self._chart_type == "pie":
+            # ── Pie charts ──────────────────────────────────────────────────
+            for axis in (self.ax1, self.ax2):
+                axis.set_facecolor(CARD)
+
+            # ax1: monthly spending pie
+            nonzero = [(month_names[i], amounts[i]) for i in range(12) if amounts[i] > 0]
+            if nonzero:
+                labels, vals = zip(*nonzero)
+                self.ax1.pie(
+                    vals, labels=labels, autopct="%1.0f%%",
+                    colors=self._PIE_COLORS[:len(vals)],
+                    startangle=90, textprops={"fontsize": 8, "color": TEXT},
+                )
+            else:
+                self.ax1.text(0.5, 0.5, "No spending this year",
+                              ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
+            self.ax1.set_title(f"Monthly Spending - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+
+            # ax2: top categories pie
+            if by_category_year:
+                sorted_cats = sorted(by_category_year.items(), key=lambda x: x[1], reverse=True)[:8]
+                cat_labels, cat_amounts = zip(*sorted_cats)
+                self.ax2.pie(
+                    cat_amounts, labels=cat_labels, autopct="%1.0f%%",
+                    colors=self._PIE_COLORS[:len(cat_amounts)],
+                    startangle=90, textprops={"fontsize": 8, "color": TEXT},
+                )
+            else:
+                self.ax2.text(0.5, 0.5, "No regular spending this year",
+                              ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
+            self.ax2.set_title(f"Top Categories - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+
         else:
-            self.ax2.text(0.5, 0.5, "No regular spending this year",
-                          ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
-        self.ax2.set_title(f"Top Categories - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
-        self.ax2.set_ylabel("HK$", fontsize=9, color=MUTED)
-        self.ax2.tick_params(axis="x", rotation=30, labelsize=8, colors=TEXT)
-        self.ax2.tick_params(axis="y", labelsize=8, colors=MUTED)
+            # ── Bar charts ──────────────────────────────────────────────────
+            for axis in (self.ax1, self.ax2):
+                axis.set_facecolor("#f9fafb")
+                axis.spines["top"].set_visible(False)
+                axis.spines["right"].set_visible(False)
+                axis.spines["left"].set_color(BORDER)
+                axis.spines["bottom"].set_color(BORDER)
+
+            bars = self.ax1.bar(month_names, amounts, color="#3b82f6", edgecolor="none", zorder=2, width=0.6)
+            self.ax1.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
+            if has_data:
+                max_a = max(amounts)
+                for bar, amount in zip(bars, amounts):
+                    if amount > 0:
+                        self.ax1.text(
+                            bar.get_x() + bar.get_width() / 2,
+                            bar.get_height() + max_a * 0.015,
+                            f"${amount:.0f}",
+                            ha="center", va="bottom", fontsize=7, color=TEXT, fontweight="bold",
+                        )
+            self.ax1.set_title(f"Monthly Spending - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+            self.ax1.set_ylabel("HK$", fontsize=9, color=MUTED)
+            self.ax1.tick_params(axis="x", rotation=0, labelsize=8, colors=TEXT)
+            self.ax1.tick_params(axis="y", labelsize=8, colors=MUTED)
+
+            if by_category_year:
+                sorted_cats = sorted(by_category_year.items(), key=lambda x: x[1], reverse=True)[:6]
+                cat_labels = [c for c, _ in sorted_cats]
+                cat_amounts = [a for _, a in sorted_cats]
+                self.ax2.bar(cat_labels, cat_amounts, color="#10b981", edgecolor="none", zorder=2, width=0.55)
+                self.ax2.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
+            else:
+                self.ax2.text(0.5, 0.5, "No regular spending this year",
+                              ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
+            self.ax2.set_title(f"Top Categories - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+            self.ax2.set_ylabel("HK$", fontsize=9, color=MUTED)
+            self.ax2.tick_params(axis="x", rotation=30, labelsize=8, colors=TEXT)
+            self.ax2.tick_params(axis="y", labelsize=8, colors=MUTED)
 
         self.fig.tight_layout(pad=2.5)
         self.canvas.draw()
@@ -541,86 +628,91 @@ class AnalysisPage(Page):
         self.summary_box.config(state="disabled")
 
     def _draw_charts(self, by_category_month, per_day, selected_month):
-        self.ax1.cla()
-        self.ax2.cla()
+        self.fig.clear()
+        self.ax1 = self.fig.add_subplot(211)
+        self.ax2 = self.fig.add_subplot(212)
         self.fig.patch.set_facecolor(CARD)
-        for axis in (self.ax1, self.ax2):
-            axis.set_facecolor("#f9fafb")
-            axis.spines["top"].set_visible(False)
-            axis.spines["right"].set_visible(False)
-            axis.spines["left"].set_color(BORDER)
-            axis.spines["bottom"].set_color(BORDER)
-
-        if by_category_month:
-            sorted_categories = sorted(by_category_month.items(), key=lambda item: item[1], reverse=True)
-            labels = [label for label, _ in sorted_categories]
-            amounts = [amount for _, amount in sorted_categories]
-            bars = self.ax1.bar(labels, amounts, color="#3b82f6", edgecolor="none", zorder=2, width=0.55)
-            self.ax1.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
-            max_amount = max(amounts)
-            for bar, amount in zip(bars, amounts):
-                self.ax1.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height() + max_amount * 0.015,
-                    f"${amount:.0f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=7.5,
-                    color=TEXT,
-                    fontweight="bold",
-                )
-        else:
-            self.ax1.text(
-                0.5,
-                0.5,
-                "No regular spending in this month",
-                ha="center",
-                va="center",
-                transform=self.ax1.transAxes,
-                color=MUTED,
-                fontsize=10,
-            )
-
         month_title = selected_month.strftime("%B %Y")
-        self.ax1.set_title(
-            f"Spending by Category - {month_title}",
-            fontsize=10,
-            pad=8,
-            color=TEXT,
-            fontweight="bold",
-        )
-        self.ax1.set_ylabel("HK$", fontsize=9, color=MUTED)
-        self.ax1.tick_params(axis="x", rotation=30, labelsize=8, colors=TEXT)
-        self.ax1.tick_params(axis="y", labelsize=8, colors=MUTED)
 
-        if per_day:
-            sorted_days = sorted(per_day.items())
-            labels = [label for label, _ in sorted_days]
-            amounts = [amount for _, amount in sorted_days]
-            self.ax2.bar(labels, amounts, color="#10b981", edgecolor="none", zorder=2, width=0.6)
-            self.ax2.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
+        if self._chart_type == "pie":
+            # ── Pie charts ──────────────────────────────────────────────────
+            for axis in (self.ax1, self.ax2):
+                axis.set_facecolor(CARD)
+
+            # ax1: categories pie
+            if by_category_month:
+                sorted_categories = sorted(by_category_month.items(), key=lambda item: item[1], reverse=True)
+                labels = [l for l, _ in sorted_categories]
+                amounts = [a for _, a in sorted_categories]
+                self.ax1.pie(
+                    amounts, labels=labels, autopct="%1.0f%%",
+                    colors=self._PIE_COLORS[:len(amounts)],
+                    startangle=90, textprops={"fontsize": 8, "color": TEXT},
+                )
+            else:
+                self.ax1.text(0.5, 0.5, "No regular spending in this month",
+                              ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
+            self.ax1.set_title(f"Spending by Category - {month_title}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+
+            # ax2: daily spending pie
+            if per_day:
+                sorted_days = sorted(per_day.items())
+                labels = [l for l, _ in sorted_days]
+                amounts = [a for _, a in sorted_days]
+                self.ax2.pie(
+                    amounts, labels=labels, autopct="%1.0f%%",
+                    colors=self._PIE_COLORS[:len(amounts)],
+                    startangle=90, textprops={"fontsize": 8, "color": TEXT},
+                )
+            else:
+                self.ax2.text(0.5, 0.5, "No regular spending days in this month",
+                              ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
+            self.ax2.set_title(f"Daily Spending - {month_title}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+
         else:
-            self.ax2.text(
-                0.5,
-                0.5,
-                "No regular spending days in this month",
-                ha="center",
-                va="center",
-                transform=self.ax2.transAxes,
-                color=MUTED,
-                fontsize=10,
-            )
+            # ── Bar charts ──────────────────────────────────────────────────
+            for axis in (self.ax1, self.ax2):
+                axis.set_facecolor("#f9fafb")
+                axis.spines["top"].set_visible(False)
+                axis.spines["right"].set_visible(False)
+                axis.spines["left"].set_color(BORDER)
+                axis.spines["bottom"].set_color(BORDER)
 
-        self.ax2.set_title(
-            f"Daily Spending - {month_title}",
-            fontsize=10,
-            pad=8,
-            color=TEXT,
-            fontweight="bold",
-        )
-        self.ax2.set_ylabel("HK$", fontsize=9, color=MUTED)
-        self.ax2.tick_params(axis="x", rotation=45, labelsize=7, colors=TEXT)
-        self.ax2.tick_params(axis="y", labelsize=8, colors=MUTED)
+            if by_category_month:
+                sorted_categories = sorted(by_category_month.items(), key=lambda item: item[1], reverse=True)
+                labels = [label for label, _ in sorted_categories]
+                amounts = [amount for _, amount in sorted_categories]
+                bars = self.ax1.bar(labels, amounts, color="#3b82f6", edgecolor="none", zorder=2, width=0.55)
+                self.ax1.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
+                max_amount = max(amounts)
+                for bar, amount in zip(bars, amounts):
+                    self.ax1.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        bar.get_height() + max_amount * 0.015,
+                        f"${amount:.0f}",
+                        ha="center", va="bottom", fontsize=7.5, color=TEXT, fontweight="bold",
+                    )
+            else:
+                self.ax1.text(0.5, 0.5, "No regular spending in this month",
+                              ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
+            self.ax1.set_title(f"Spending by Category - {month_title}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+            self.ax1.set_ylabel("HK$", fontsize=9, color=MUTED)
+            self.ax1.tick_params(axis="x", rotation=30, labelsize=8, colors=TEXT)
+            self.ax1.tick_params(axis="y", labelsize=8, colors=MUTED)
+
+            if per_day:
+                sorted_days = sorted(per_day.items())
+                labels = [label for label, _ in sorted_days]
+                amounts = [amount for _, amount in sorted_days]
+                self.ax2.bar(labels, amounts, color="#10b981", edgecolor="none", zorder=2, width=0.6)
+                self.ax2.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
+            else:
+                self.ax2.text(0.5, 0.5, "No regular spending days in this month",
+                              ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
+            self.ax2.set_title(f"Daily Spending - {month_title}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
+            self.ax2.set_ylabel("HK$", fontsize=9, color=MUTED)
+            self.ax2.tick_params(axis="x", rotation=45, labelsize=7, colors=TEXT)
+            self.ax2.tick_params(axis="y", labelsize=8, colors=MUTED)
 
         self.fig.tight_layout(pad=2.5)
         self.canvas.draw()
