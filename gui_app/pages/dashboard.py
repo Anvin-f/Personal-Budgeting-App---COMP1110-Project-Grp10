@@ -126,7 +126,6 @@ class DashboardPage(Page):
                                font=(FONT_FAMILY, 18, "bold"))
         value_label.pack(anchor="w", padx=16, pady=(0, 16))
 
-        # ── forward clicks from any descendant to the card_frame ─────────
         def _forward_click(event):
             card_frame.event_generate("<Button-1>", when="tail")
 
@@ -325,7 +324,7 @@ class DashboardPage(Page):
         self._today_val.config(text=f"HK${today_total:.2f}")
         self._week_val.config(text=f"HK${week_total:.2f}")
         self._month_val.config(text=f"HK${month_total:.2f}")
-        # show percentage of monthly budget
+
         try:
             budgets = alerts.read_budget_csv()
             total_budget = sum(amount for (_, period), amount in budgets.items()
@@ -385,3 +384,10 @@ class DashboardPage(Page):
 
         output = capture_output(alerts.check_all_alerts)
         self._render_alerts(output)
+
+        # ── Capture new alerts for sidebar badge ─────────────────────────
+        new_output = capture_output(alerts.check_new_alerts)
+        new_lines = self._parse_alert_lines(new_output)
+        top = self.winfo_toplevel()
+        if hasattr(top, "update_alert_badge"):
+            top.update_alert_badge(new_lines)
