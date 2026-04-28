@@ -166,22 +166,42 @@ class BudgetApp(tk.Tk):
 
         # nav buttons
         self._nav_buttons = []
+        import platform
+        is_mac = platform.system() == "Darwin"
         for index, (name, _) in enumerate(page_defs):
-            btn = tk.Button(
-                sidebar,
-                text=f"    {name}",
-                bg=self._pal["sidebar"],
-                fg=self._pal["sidebar_text"],
-                font=SIDEBAR_FONT,
-                bd=0,
-                activebackground=self._pal["sidebar_active"],
-                activeforeground="white",
-                cursor="hand2",
-                anchor="w",
-                relief="flat",
-                command=lambda idx=index: self._select_tab(idx),
-            )
-            btn.pack(fill="x", padx=0, pady=1, ipady=8)
+            if is_mac:
+                btn = tk.Label(
+                    sidebar,
+                    text=f"    {name}",
+                    bg=self._pal["sidebar"],
+                    fg=self._pal["sidebar_text"],
+                    font=SIDEBAR_FONT,
+                    cursor="hand2",
+                    anchor="w",
+                    relief="flat",
+                    padx=0,
+                    pady=8,
+                )
+                btn.bind("<Button-1>", lambda e, idx=index: self._select_tab(idx))
+            else:
+                btn = tk.Button(
+                    sidebar,
+                    text=f"    {name}",
+                    bg=self._pal["sidebar"],
+                    fg=self._pal["sidebar_text"],
+                    font=SIDEBAR_FONT,
+                    bd=0,
+                    activebackground=self._pal["sidebar_active"],
+                    activeforeground="white",
+                    cursor="hand2",
+                    anchor="w",
+                    relief="flat",
+                    highlightbackground=self._pal["sidebar"],
+                    highlightthickness=0,
+                    command=lambda idx=index: self._select_tab(idx),
+                )
+            btn._nav_btn = True   # mark for _fix_sidebar_bg
+            btn.pack(fill="x", padx=0, pady=1)
             self._nav_buttons.append(btn)
 
         self._select_tab(0)
@@ -205,13 +225,20 @@ class BudgetApp(tk.Tk):
                     bg=self._pal["sidebar_active"],
                     fg="white",
                     font=(FONT_FAMILY, 11, "bold"),
+                    highlightbackground=self._pal["sidebar_active"],
                 )
             else:
                 btn.config(
                     bg=self._pal["sidebar"],
                     fg=self._pal["sidebar_text"],
                     font=SIDEBAR_FONT,
+                    highlightbackground=self._pal["sidebar"],
                 )
+        # Refresh page data and redraw
+        page_names = list(self._pages.keys())
+        if 0 <= index < len(page_names):
+            self._pages[page_names[index]].load()
+        self.update_idletasks()
 
     def _refresh_all(self):
         for page in self._pages.values():
@@ -311,14 +338,14 @@ class BudgetApp(tk.Tk):
         color = self._pal["sidebar"]
 
         def set_bg(widget):
+            # Skip action buttons and navigation items
+            if getattr(widget, "_is_action_button", False) or getattr(widget, "_nav_btn", False):
+                return
             try:
                 widget.configure(bg=color)
             except tk.TclError:
                 pass
             for child in widget.winfo_children():
-                # Buttons are styled separately by _select_tab; skip them
-                if isinstance(child, tk.Button):
-                    continue
                 set_bg(child)
 
         set_bg(self.sidebar)

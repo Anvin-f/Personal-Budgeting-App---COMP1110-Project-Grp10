@@ -7,6 +7,7 @@ from tkinter import ttk
 
 import core.settings as app_settings
 import core.tags as tags
+import platform
 
 from .constants import ACCENT, BG, BORDER, CARD, FONT_H, TEXT, FONT_FAMILY
 
@@ -33,16 +34,37 @@ def card(parent, **kwargs):
 
 
 def button(parent, text, command, color=ACCENT, fg="white", **kwargs):
-    """Themed pill button."""
-    return tk.Button(
-        parent, text=text, command=command,
-        bg=color, fg=fg,
-        font=(FONT_FAMILY, 10, "bold"),
-        bd=0, cursor="hand2",
-        activebackground=color, activeforeground=fg,
-        relief="flat", padx=14, pady=7,
-        **kwargs,
-    )
+    """Themed pill button. On macOS, a Label is used to keep the background colour."""
+    if platform.system() == "Darwin":
+        lbl = tk.Label(
+            parent,
+            text=text,
+            bg=color,
+            fg=fg,
+            font=(FONT_FAMILY, 10, "bold"),
+            cursor="hand2",
+            relief="flat",
+            bd=2,
+            highlightbackground=color,
+            padx=14,
+            pady=7,
+            **kwargs,
+        )
+        lbl.bind("<Button-1>", lambda e, cmd=command: cmd())
+        lbl._is_action_button = True   # mark for _fix_sidebar_bg
+        return lbl
+    else:
+        btn = tk.Button(
+            parent, text=text, command=command,
+            bg=color, fg=fg,
+            font=(FONT_FAMILY, 10, "bold"),
+            bd=0, cursor="hand2",
+            activebackground=color, activeforeground=fg,
+            relief="flat", padx=14, pady=7,
+            **kwargs,
+        )
+        btn._is_action_button = True
+        return btn
 
 
 def page_header(parent, title):
