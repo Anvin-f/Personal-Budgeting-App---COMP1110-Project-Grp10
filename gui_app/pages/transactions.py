@@ -1,6 +1,6 @@
 import csv
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -9,12 +9,14 @@ import core.settings as app_settings
 import core.transaction as transaction
 
 from ..base import Page
-from ..constants import ACCENT, BG, BORDER, DANGER, FONT, FONT_H, SUCCESS, TEXT
-from ..helpers import button, card, repaint_tree, safe_float, safe_read_tags, zebra
+from ..constants import ACCENT, BG, BORDER, DANGER, MUTED, FONT, FONT_H, SUCCESS, TEXT, FONT_FAMILY
+from ..helpers import button, card, repaint_tree, safe_float, safe_read_tags, zebra, bind_tree_sort
 
 
 class TransactionsPage(Page):
     def build(self):
+        self._selected_ids = set()
+
         top = tk.Frame(self, bg=BG)
         top.pack(fill="x", padx=24, pady=(18, 0))
         tk.Label(top, text="💳  Transactions", bg=BG, fg=TEXT, font=FONT_H).pack(side="left")
@@ -25,7 +27,8 @@ class TransactionsPage(Page):
         button(buttons, "➕  Add", self._add_dialog, SUCCESS).pack(side="left", padx=4)
         button(buttons, "✏️  Edit", self._edit_selected, "#0ea5e9").pack(side="left", padx=4)
         button(buttons, "📥  Import CSV", self._import_csv, ACCENT).pack(side="left", padx=4)
-        button(buttons, "🗑️  Delete", self._delete_selected, DANGER).pack(side="left", padx=4)
+        button(buttons, "☑  Select All", self._select_all_toggle, "#374151").pack(side="left", padx=4)
+        button(buttons, "🗑️  Delete Selected", self._delete_selected, DANGER).pack(side="left", padx=4)
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=24, pady=(6, 10))
 
@@ -36,7 +39,7 @@ class TransactionsPage(Page):
             text="🔍  Search",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
         ).pack(side="left", padx=(0, 8))
 
         self.search_var = tk.StringVar()
@@ -57,9 +60,25 @@ class TransactionsPage(Page):
             text="0 shown",
             bg=BG,
             fg="#6b7280",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
         )
         self._result_count_label.pack(side="left")
+
+        quick_row = tk.Frame(self, bg=BG)
+        quick_row.pack(fill="x", padx=24, pady=(0, 6))
+        tk.Label(quick_row, text="Quick:", bg=BG, fg=MUTED,
+                 font=(FONT_FAMILY, 8, "bold")).pack(side="left", padx=(0, 6))
+        for label, cmd in (
+            ("Today", self._set_quick_today),
+            ("This Week", self._set_quick_week),
+            ("This Month", self._set_quick_month),
+        ):
+            tk.Button(
+                quick_row, text=label,
+                font=(FONT_FAMILY, 8), bg="#e5e7eb", fg=TEXT,
+                relief="flat", bd=0, padx=8, pady=2, cursor="hand2",
+                command=cmd,
+            ).pack(side="left", padx=(0, 4))
 
         filter_row = tk.Frame(self, bg=BG)
         filter_row.pack(fill="x", padx=24, pady=(0, 8))
@@ -73,27 +92,27 @@ class TransactionsPage(Page):
         for var in (self.date_from_var, self.date_to_var, self.amount_min_var, self.amount_max_var, self.tag_filter_var):
             var.trace_add("write", lambda *_args: self._apply_search())
 
-        tk.Label(filter_row, text="From", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Label(filter_row, text="From", bg=BG, fg=TEXT, font=(FONT_FAMILY, 9, "bold")).pack(side="left")
         tk.Entry(filter_row, textvariable=self.date_from_var, font=FONT, width=10, relief="solid", bd=1).pack(
             side="left", padx=(6, 10), ipady=3
         )
 
-        tk.Label(filter_row, text="To", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Label(filter_row, text="To", bg=BG, fg=TEXT, font=(FONT_FAMILY, 9, "bold")).pack(side="left")
         tk.Entry(filter_row, textvariable=self.date_to_var, font=FONT, width=10, relief="solid", bd=1).pack(
             side="left", padx=(6, 10), ipady=3
         )
 
-        tk.Label(filter_row, text="Min HK$", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Label(filter_row, text="Min HK$", bg=BG, fg=TEXT, font=(FONT_FAMILY, 9, "bold")).pack(side="left")
         tk.Entry(filter_row, textvariable=self.amount_min_var, font=FONT, width=8, relief="solid", bd=1).pack(
             side="left", padx=(6, 10), ipady=3
         )
 
-        tk.Label(filter_row, text="Max HK$", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Label(filter_row, text="Max HK$", bg=BG, fg=TEXT, font=(FONT_FAMILY, 9, "bold")).pack(side="left")
         tk.Entry(filter_row, textvariable=self.amount_max_var, font=FONT, width=8, relief="solid", bd=1).pack(
             side="left", padx=(6, 10), ipady=3
         )
 
-        tk.Label(filter_row, text="Tag", bg=BG, fg=TEXT, font=("Helvetica Neue", 9, "bold")).pack(side="left")
+        tk.Label(filter_row, text="Tag", bg=BG, fg=TEXT, font=(FONT_FAMILY, 9, "bold")).pack(side="left")
         self.tag_filter_combo = ttk.Combobox(
             filter_row,
             textvariable=self.tag_filter_var,
@@ -112,7 +131,7 @@ class TransactionsPage(Page):
             text="Active Filters",
             bg=BG,
             fg="#6b7280",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
         ).pack(side="left", padx=(0, 8))
         self._chips_container = tk.Frame(chips_row, bg=BG)
         self._chips_container.pack(side="left", fill="x", expand=True)
@@ -120,7 +139,7 @@ class TransactionsPage(Page):
         transactions_card = card(self)
         transactions_card.pack(fill="both", expand=True, padx=24, pady=(0, 18))
 
-        columns = ("ID", "Date", "Name", "Description", "Amount", "Tags")
+        columns = ("☐", "ID", "Date", "Name", "Description", "Amount", "Tags")
         self.tree = ttk.Treeview(
             transactions_card,
             columns=columns,
@@ -129,6 +148,7 @@ class TransactionsPage(Page):
             style="Modern.Treeview",
         )
         widths = {
+            "☐": 25,
             "ID": 45,
             "Date": 100,
             "Name": 170,
@@ -136,7 +156,7 @@ class TransactionsPage(Page):
             "Amount": 100,
             "Tags": 190,
         }
-        anchors = {"ID": "center", "Date": "center", "Amount": "e"}
+        anchors = {"☐": "center", "ID": "center", "Date": "center", "Amount": "e"}
         for column in columns:
             self.tree.heading(column, text=column)
             self.tree.column(column, width=widths[column], anchor=anchors.get(column, "w"))
@@ -147,6 +167,74 @@ class TransactionsPage(Page):
         scrollbar.pack(side="right", fill="y")
         self.tree.pack(fill="both", expand=True)
         self.tree.bind("<Double-1>", lambda _event: self._edit_selected())
+        self.tree.bind("<Button-1>", self._on_click_check_column)
+        def _parse_hkd(v):
+            return safe_float(v.replace("HK$", "").replace(",", ""))
+        bind_tree_sort(self.tree, "☐", 0)
+        bind_tree_sort(self.tree, "ID", 1, parse_fn=lambda v: safe_float(v))
+        bind_tree_sort(self.tree, "Date", 2)
+        bind_tree_sort(self.tree, "Name", 3)
+        bind_tree_sort(self.tree, "Description", 4)
+        bind_tree_sort(self.tree, "Amount", 5, parse_fn=_parse_hkd)
+        bind_tree_sort(self.tree, "Tags", 6)
+
+    #Check empty box status
+    def _on_click_check_column(self, event):
+        """Toggle checkbox on first column click."""
+        region = self.tree.identify("region", event.x, event.y)
+        if region != "cell":
+            return
+        column = self.tree.identify("column", event.x, event.y)
+        if column != "#1":
+            return
+        item = self.tree.identify("item", event.x, event.y)
+        if not item:
+            return
+        # get current values
+        values = list(self.tree.item(item, "values"))
+        # toggle checkmark
+        if values[0] == "✓":
+            values[0] = ""
+            self._selected_ids.discard(str(values[1]))
+        else:
+            values[0] = "✓"
+            self._selected_ids.add(str(values[1]))
+        self.tree.item(item, values=values)
+        for r in self._all_rows:
+            if str(r["values"][1]) == str(values[1]):
+                r["values"] = tuple(values)
+                break    
+
+    #Function of selecting all items
+    def _select_all_toggle(self):
+        """Toggle select all / deselect all for currently visible rows."""
+        if not hasattr(self, "_all_rows"):
+            return
+        visible_ids = set()
+        for item in self.tree.get_children(""):
+            vid = str(self.tree.item(item, "values")[1])
+            visible_ids.add(vid)
+
+        all_checked = all(
+            r["values"][0] == "✓" for r in self._all_rows
+            if str(r["values"][1]) in visible_ids
+        )
+
+        for row in self._all_rows:
+            if str(row["values"][1]) not in visible_ids:
+                continue
+            if all_checked:
+                row["values"] = ("",) + row["values"][1:]
+            else:
+                row["values"] = ("✓",) + row["values"][1:]
+
+        self._selected_ids = set()
+        if not all_checked:
+            for row in self._all_rows:
+                if str(row["values"][1]) in visible_ids:
+                    self._selected_ids.add(str(row["values"][1]))
+
+        self._apply_search()
 
     def load(self):
         try:
@@ -156,7 +244,9 @@ class TransactionsPage(Page):
             settings = app_settings.read_settings()
         except Exception:
             return
-
+        
+        zebra(self.tree)
+        
         show_chips = settings.get("show_filter_chips", True)
         if show_chips:
             self.chips_row.pack(fill="x", padx=24, pady=(0, 8))
@@ -190,6 +280,7 @@ class TransactionsPage(Page):
 
             amount_value = safe_float(row.get("Amount"))
             values = (
+                "",
                 transaction_id,
                 date_text,
                 row.get("Name", ""),
@@ -208,6 +299,28 @@ class TransactionsPage(Page):
                 }
             )
 
+        self._apply_search()
+
+    def _set_quick_today(self):
+        today = datetime.today().strftime("%Y-%m-%d")
+        self.date_from_var.set(today)
+        self.date_to_var.set(today)
+        self._apply_search()
+
+    def _set_quick_week(self):
+        today = datetime.today()
+        start = (today - timedelta(days=6)).strftime("%Y-%m-%d")
+        end = today.strftime("%Y-%m-%d")
+        self.date_from_var.set(start)
+        self.date_to_var.set(end)
+        self._apply_search()
+
+    def _set_quick_month(self):
+        today = datetime.today()
+        start = today.replace(day=1).strftime("%Y-%m-%d")
+        end = today.strftime("%Y-%m-%d")
+        self.date_from_var.set(start)
+        self.date_to_var.set(end)
         self._apply_search()
 
     def _render_rows(self, rows):
@@ -304,7 +417,7 @@ class TransactionsPage(Page):
                 text="None",
                 bg=BG,
                 fg="#9ca3af",
-                font=("Helvetica Neue", 9),
+                font=(FONT_FAMILY, 9),
             ).pack(side="left")
             return
 
@@ -317,7 +430,7 @@ class TransactionsPage(Page):
                 text=text,
                 bg="#e5e7eb",
                 fg="#1f2937",
-                font=("Helvetica Neue", 8, "bold"),
+                font=(FONT_FAMILY, 8, "bold"),
                 padx=8,
                 pady=3,
             ).pack(side="left")
@@ -328,7 +441,7 @@ class TransactionsPage(Page):
                 command=lambda filter_key=key: self._remove_filter(filter_key),
                 bg="#d1d5db",
                 fg="#111827",
-                font=("Helvetica Neue", 8, "bold"),
+                font=(FONT_FAMILY, 8, "bold"),
                 relief="flat",
                 bd=0,
                 padx=5,
@@ -353,19 +466,31 @@ class TransactionsPage(Page):
             self.tag_filter_var.set("All Tags")
 
     def _delete_selected(self):
-        selection = self.tree.selection()
-        if not selection:
-            messagebox.showwarning("No selection", "Select a transaction to delete.")
-            return
-        row = self.tree.item(selection[0], "values")
-        transaction_id, name = str(row[0]), row[2]
-        if app_settings.read_settings().get("confirm_delete", True):
-            if not messagebox.askyesno("Confirm Delete", f"Delete transaction #{transaction_id} '{name}'?"):
+        if not self._selected_ids:
+            selection = self.tree.selection()
+            if not selection:
+                messagebox.showwarning("No selection", "Select transactions to delete.")
                 return
+            ids_to_delete = set()
+            for item in selection:
+                row = self.tree.item(item, "values")
+                ids_to_delete.add(str(row[1]))  # values[1] is ID
+        else:
+            ids_to_delete = self._selected_ids.copy()
+
+        count = len(ids_to_delete)
+        if app_settings.read_settings().get("confirm_delete", True):
+            if not messagebox.askyesno("Confirm Delete", f"Delete {count} selected transaction(s)?"):
+                return
+
         transactions = transaction._load_transactions()
         assignments = transaction._load_assignments()
-        transaction._save_transactions([item for item in transactions if item["ID"] != transaction_id])
-        transaction._save_assignments([item for item in assignments if item["ID"] != transaction_id])
+        transactions = [t for t in transactions if t["ID"] not in ids_to_delete]
+        assignments = [a for a in assignments if a["ID"] not in ids_to_delete]
+
+        transaction._save_transactions(transactions)
+        transaction._save_assignments(assignments)
+        self._selected_ids.clear()
         self.load()
 
     def _add_dialog(self):
@@ -377,7 +502,7 @@ class TransactionsPage(Page):
             messagebox.showwarning("No selection", "Select a transaction to edit.")
             return
         row = self.tree.item(selection[0], "values")
-        transaction_id = str(row[0])
+        transaction_id = str(row[1])
         EditTransactionDialog(self, transaction_id=transaction_id, on_save=self.load)
 
     def _peer_dialog(self):
@@ -484,7 +609,7 @@ class AddTransactionDialog(tk.Toplevel):
                 text=label,
                 bg=BG,
                 fg=TEXT,
-                font=("Helvetica Neue", 10, "bold"),
+                font=(FONT_FAMILY, 10, "bold"),
                 anchor="w",
             ).pack(fill="x", pady=(10, 3))
             tk.Entry(
@@ -501,7 +626,7 @@ class AddTransactionDialog(tk.Toplevel):
             text="Assign Tag (optional)",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         self._tag_dict = safe_read_tags()
@@ -596,7 +721,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             text="Date (YYYY-MM-DD)",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(8, 3))
         tk.Entry(form, textvariable=self.date_var, font=FONT, relief="solid", bd=1, highlightthickness=0).pack(
@@ -608,7 +733,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             text="Peer",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         peer_options = self._build_peer_options()
@@ -624,7 +749,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             text="Recent Peers",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(8, 3))
         chips = tk.Frame(form, bg=BG)
@@ -648,7 +773,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             text="Direction",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         direction_row = tk.Frame(form, bg=BG)
@@ -681,7 +806,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             text="Amount (HK$)",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         tk.Entry(form, textvariable=self.amount_var, font=FONT, relief="solid", bd=1, highlightthickness=0).pack(
@@ -693,7 +818,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             text="Description (optional)",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         tk.Entry(form, textvariable=self.desc_var, font=FONT, relief="solid", bd=1, highlightthickness=0).pack(
@@ -705,7 +830,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             text="This creates a transaction and links the correct Balance + Peer tag automatically.",
             bg=BG,
             fg="#6b7280",
-            font=("Helvetica Neue", 9),
+            font=(FONT_FAMILY, 9),
             anchor="w",
             justify="left",
             wraplength=360,
@@ -718,7 +843,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             textvariable=self.suggestion_var,
             bg=BG,
             fg="#8b5cf6",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             anchor="w",
             justify="left",
             wraplength=360,
@@ -898,7 +1023,7 @@ class EditTransactionDialog(tk.Toplevel):
                 text=label,
                 bg=BG,
                 fg=TEXT,
-                font=("Helvetica Neue", 10, "bold"),
+                font=(FONT_FAMILY, 10, "bold"),
                 anchor="w",
             ).pack(fill="x", pady=(10, 3))
             tk.Entry(

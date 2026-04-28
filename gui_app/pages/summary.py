@@ -5,7 +5,7 @@ import core.settings as app_settings
 from core.chatbot import build_financial_context, get_chat_response
 
 from ..base import Page
-from ..constants import ACCENT, BG, BORDER, CARD, FONT, TEXT
+from ..constants import ACCENT, BG, BORDER, CARD, FONT, TEXT, FONT_FAMILY
 from ..helpers import button, card, page_header
 
 
@@ -33,7 +33,7 @@ class SummaryPage(Page):
             text="✏️  Customize Prompt (Optional)",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 11, "bold"),
+            font=(FONT_FAMILY, 11, "bold"),
         )
         prompt_label.pack(anchor="w", pady=(0, 8))
 
@@ -51,7 +51,7 @@ class SummaryPage(Page):
             prompt_frame,
             bg=CARD,
             fg=TEXT,
-            font=("Helvetica Neue", 9),
+            font=(FONT_FAMILY, 9),
             height=6,
             width=80,
             yscrollcommand=scrollbar.set,
@@ -79,7 +79,7 @@ class SummaryPage(Page):
             text="Summary Results",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 12, "bold"),
+            font=(FONT_FAMILY, 12, "bold"),
         ).pack(side="left")
         self.generate_btn = button(header, "✨  Generate Summary", self._generate_summary, color=ACCENT)
         self.generate_btn.pack(side="right")
@@ -125,7 +125,7 @@ class SummaryPage(Page):
             text="Click 'Generate Summary' to get your personalized financial insights.",
             bg=CARD,
             fg="#9ca3af",
-            font=("Helvetica Neue", 11),
+            font=(FONT_FAMILY, 11),
             wraplength=600,
             justify="center",
         )
@@ -152,7 +152,7 @@ class SummaryPage(Page):
             text=title,
             bg=CARD,
             fg=ACCENT,
-            font=("Helvetica Neue", 11, "bold"),
+            font=(FONT_FAMILY, 11, "bold"),
         )
         title_label.pack(anchor="w", pady=(0, 8))
 
@@ -182,7 +182,7 @@ class SummaryPage(Page):
             text="🔄  Generating your financial summary...",
             bg=CARD,
             fg="#9ca3af",
-            font=("Helvetica Neue", 11),
+            font=(FONT_FAMILY, 11),
         )
         loading.pack(pady=40)
 
@@ -275,7 +275,7 @@ class SummaryPage(Page):
             text=f"❌ {error_msg}",
             bg=CARD,
             fg="#ef4444",
-            font=("Helvetica Neue", 11),
+            font=(FONT_FAMILY, 11),
             wraplength=600,
             justify="center",
         )

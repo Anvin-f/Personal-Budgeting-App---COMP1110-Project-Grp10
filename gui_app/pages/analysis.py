@@ -10,8 +10,8 @@ import core.alerts as alerts
 import core.adjustments as adjustments
 
 from ..base import Page
-from ..constants import BG, BORDER, CARD, FONT_SM, MUTED, TEXT
-from ..helpers import card, page_header
+from ..constants import BG, BORDER, CARD, FONT_SM, MUTED, TEXT, FONT_FAMILY
+from ..helpers import card, page_header, bind_tree_sort
 
 
 class AnalysisPage(Page):
@@ -39,7 +39,7 @@ class AnalysisPage(Page):
         self._month_toggle = tk.Button(
             toggle_frame,
             text="Month",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             bg="#3b82f6",
             fg="white",
             relief="flat",
@@ -54,7 +54,7 @@ class AnalysisPage(Page):
         self._year_toggle = tk.Button(
             toggle_frame,
             text="Year",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
@@ -72,7 +72,7 @@ class AnalysisPage(Page):
         self._bar_toggle = tk.Button(
             toggle_frame,
             text="Bar",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             bg="#3b82f6",
             fg="white",
             relief="flat",
@@ -87,7 +87,7 @@ class AnalysisPage(Page):
         self._pie_toggle = tk.Button(
             toggle_frame,
             text="Pie",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
@@ -106,7 +106,7 @@ class AnalysisPage(Page):
         self.prev_btn = tk.Button(
             self._month_nav_frame,
             text="< Previous",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
@@ -123,14 +123,14 @@ class AnalysisPage(Page):
             text="",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 11, "bold"),
+            font=(FONT_FAMILY, 11, "bold"),
         )
         self.month_label.pack(side="left", padx=12)
 
         self.next_btn = tk.Button(
             self._month_nav_frame,
             text="Next >",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
@@ -149,7 +149,7 @@ class AnalysisPage(Page):
         self._prev_year_btn = tk.Button(
             self._year_nav_frame,
             text="< Previous",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
@@ -166,14 +166,14 @@ class AnalysisPage(Page):
             text="",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 11, "bold"),
+            font=(FONT_FAMILY, 11, "bold"),
         )
         self._year_label.pack(side="left", padx=12)
 
         self._next_year_btn = tk.Button(
             self._year_nav_frame,
             text="Next >",
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
@@ -207,7 +207,7 @@ class AnalysisPage(Page):
             text="Spending Summary",
             bg=CARD,
             fg=TEXT,
-            font=("Helvetica Neue", 12, "bold"),
+            font=(FONT_FAMILY, 12, "bold"),
         ).pack(anchor="w", padx=14, pady=(14, 4))
         tk.Frame(text_card, bg=BORDER, height=1).pack(fill="x", padx=14, pady=(0, 6))
 
@@ -229,14 +229,14 @@ class AnalysisPage(Page):
                 text=title,
                 bg="#f8fafc",
                 fg=MUTED,
-                font=("Helvetica Neue", 8, "bold"),
+                font=(FONT_FAMILY, 8, "bold"),
             ).pack(anchor="w", padx=8, pady=(6, 0))
             value_label = tk.Label(
                 metric_card,
                 text="-",
                 bg="#f8fafc",
                 fg=accent,
-                font=("Helvetica Neue", 10, "bold"),
+                font=(FONT_FAMILY, 10, "bold"),
             )
             value_label.pack(anchor="w", padx=8, pady=(0, 6))
             self._metric_values[key] = value_label
@@ -305,6 +305,21 @@ class AnalysisPage(Page):
         self.summary_peer_tree.configure(yscrollcommand=peer_scroll.set)
         self.summary_peer_tree.pack(side="left", fill="both", expand=True)
         peer_scroll.pack(side="right", fill="y")
+        
+        def _parse_hkd(v):
+            from ..helpers import safe_float
+            return safe_float(v.replace("HK$", "").replace(",", ""))
+        bind_tree_sort(self.summary_breakdown_tree, "item", 0)
+        bind_tree_sort(self.summary_breakdown_tree, "amount", 1, parse_fn=_parse_hkd)
+        bind_tree_sort(self.summary_breakdown_tree, "share", 2, parse_fn=lambda v: float(v.replace("%", "")))
+        bind_tree_sort(self.summary_breakdown_tree, "note", 3)
+        bind_tree_sort(self.summary_adjust_tree, "metric", 0)
+        bind_tree_sort(self.summary_adjust_tree, "amount", 1, parse_fn=_parse_hkd)
+        bind_tree_sort(self.summary_adjust_tree, "status", 2)
+        bind_tree_sort(self.summary_peer_tree, "peer", 0)
+        bind_tree_sort(self.summary_peer_tree, "period_net", 1, parse_fn=_parse_hkd)
+        bind_tree_sort(self.summary_peer_tree, "all_time_net", 2, parse_fn=_parse_hkd)
+        bind_tree_sort(self.summary_peer_tree, "trend", 3)
 
     def _set_view_mode(self, mode):
         self._view_mode = mode
