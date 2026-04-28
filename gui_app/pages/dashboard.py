@@ -20,7 +20,8 @@ class DashboardPage(Page):
         # ── KPI CARDS ────────────────────────────────────────────────────
         kpi_container = tk.Frame(self, bg=BG)
         kpi_container.pack(fill="x", padx=24, pady=(14, 20))
-
+        
+        self._month_pct_label = None
         self._today_val, self._today_card = self._kpi_card(kpi_container, "Today", ACCENT, "💰")
         self._week_val, self._week_card = self._kpi_card(kpi_container, "This Week", "#8b5cf6", "📊")
         self._month_val, self._month_card = self._kpi_card(kpi_container, "This Month", "#f59e0b", "📈")
@@ -324,6 +325,25 @@ class DashboardPage(Page):
         self._today_val.config(text=f"HK${today_total:.2f}")
         self._week_val.config(text=f"HK${week_total:.2f}")
         self._month_val.config(text=f"HK${month_total:.2f}")
+        # show percentage of monthly budget
+        try:
+            budgets = alerts.read_budget_csv()
+            total_budget = sum(amount for (_, period), amount in budgets.items()
+                               if period == "monthly")
+            pct = (month_total / total_budget * 100) if total_budget > 0 else 0
+            if self._month_pct_label is None:
+                self._month_pct_label = tk.Label(
+                    self._month_card,
+                    text="",
+                    bg=CARD,
+                    fg=MUTED,
+                    font=(FONT_FAMILY, 9),
+                )
+                self._month_pct_label.pack(anchor="w", padx=16, pady=(0, 8))
+            self._month_pct_label.config(text=f"{pct:.0f}% of budget")
+        except Exception:
+            if self._month_pct_label is not None:
+                self._month_pct_label.config(text="")
 
         try:
             budgets = alerts.read_budget_csv()

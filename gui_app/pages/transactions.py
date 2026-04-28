@@ -72,6 +72,7 @@ class TransactionsPage(Page):
             ("Today", self._set_quick_today),
             ("This Week", self._set_quick_week),
             ("This Month", self._set_quick_month),
+            ("This Year", self._set_quick_year),
         ):
             tk.Button(
                 quick_row, text=label,
@@ -318,6 +319,14 @@ class TransactionsPage(Page):
     def _set_quick_month(self):
         today = datetime.today()
         start = today.replace(day=1).strftime("%Y-%m-%d")
+        end = today.strftime("%Y-%m-%d")
+        self.date_from_var.set(start)
+        self.date_to_var.set(end)
+        self._apply_search()
+
+    def _set_quick_year(self):
+        today = datetime.today()
+        start = today.replace(month=1, day=1).strftime("%Y-%m-%d")
         end = today.strftime("%Y-%m-%d")
         self.date_from_var.set(start)
         self.date_to_var.set(end)
