@@ -5,14 +5,17 @@ from tkinter import messagebox, ttk
 
 import core.alerts as alerts
 import core.adjustments as adjustments
+import core.settings as app_settings
 
 from ..base import Page
-from ..constants import ACCENT, BG, BORDER, CARD, DANGER, FONT, FONT_H, FONT_SM, MUTED, SUCCESS, TEXT
-from ..helpers import button, card, repaint_tree, zebra
+from ..constants import ACCENT, BG, BORDER, CARD, DANGER, FONT, FONT_H, FONT_SM, MUTED, SUCCESS, TEXT, FONT_FAMILY
+from ..helpers import button, card, repaint_tree, zebra, bind_tree_sort, safe_float
 
 
 class BudgetPage(Page):
     def build(self):
+        self._selected_ids = set()  # budget tag_ids selected via checkbox
+
         today = datetime.today()
         self._selected_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         self._min_month = self._selected_month
@@ -26,6 +29,7 @@ class BudgetPage(Page):
         buttons = tk.Frame(top, bg=BG)
         buttons.pack(side="right", anchor="s")
         button(buttons, "➕  Add", self._add_dialog, SUCCESS).pack(side="left", padx=4)
+        button(buttons, "☑  Select All", self._select_all_toggle, "#374151").pack(side="left", padx=4)
         button(buttons, "🗑️  Delete", self._delete_selected, DANGER).pack(side="left", padx=4)
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=24, pady=(6, 6))
@@ -34,25 +38,23 @@ class BudgetPage(Page):
         nav = tk.Frame(self, bg=BG)
         nav.pack(fill="x", padx=24, pady=(0, 8))
 
-        self._prev_btn = tk.Button(
+        self._prev_btn = tk.Label(
             nav, text="< Previous",
-            font=("Helvetica Neue", 9, "bold"), bg="#e5e7eb", fg=TEXT,
-            relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-            command=self._go_prev,
+            font=(FONT_FAMILY, 9, "bold"), bg="#e5e7eb", fg=TEXT,
+            relief="flat", bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._prev_btn.bind("<Button-1>", self._on_prev_click)
         self._prev_btn.pack(side="left")
-
-        self._month_label = tk.Label(nav, text="", bg=BG, fg=TEXT,
-                                     font=("Helvetica Neue", 11, "bold"))
-        self._month_label.pack(side="left", padx=12)
-
-        self._next_btn = tk.Button(
+        self._next_btn = tk.Label(
             nav, text="Next >",
-            font=("Helvetica Neue", 9, "bold"), bg="#e5e7eb", fg=TEXT,
-            relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-            command=self._go_next,
+            font=(FONT_FAMILY, 9, "bold"), bg="#e5e7eb", fg=TEXT,
+            relief="flat", bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._next_btn.bind("<Button-1>", self._on_next_click)
         self._next_btn.pack(side="left")
+        self._month_label = tk.Label(nav, text="", bg=BG, fg=TEXT,
+                             font=(FONT_FAMILY, 11, "bold"))
+        self._month_label.pack(side="left", padx=12)
 
         # ── totals bar ───────────────────────────────────────────────────────
         totals_frame = tk.Frame(self, bg=CARD, bd=0, relief="flat")
@@ -73,14 +75,16 @@ class BudgetPage(Page):
         budget_card = card(self)
         budget_card.pack(fill="both", expand=True, padx=24, pady=(0, 18))
 
-        columns = ("Tag ID", "Tag Name", "Budget (HK$)", "Spent (HK$)", "Remaining (HK$)", "Used %")
+        columns = ("☐", "Tag ID", "Tag Name", "Budget (HK$)", "Spent (HK$)", "Remaining (HK$)", "Used %")
         self.tree = ttk.Treeview(budget_card, columns=columns, show="headings", selectmode="browse")
+        self.tree.heading("☐", text="☐")
         self.tree.heading("Tag ID", text="ID")
         self.tree.heading("Tag Name", text="Tag Name")
         self.tree.heading("Budget (HK$)", text="Budget (HK$)")
         self.tree.heading("Spent (HK$)", text="Spent (HK$)")
         self.tree.heading("Remaining (HK$)", text="Remaining (HK$)")
         self.tree.heading("Used %", text="Used %")
+        self.tree.column("☐", width=30, anchor="center")
         self.tree.column("Tag ID", width=55, anchor="center")
         self.tree.column("Tag Name", width=180)
         self.tree.column("Budget (HK$)", width=130, anchor="e")
@@ -98,8 +102,29 @@ class BudgetPage(Page):
         scrollbar.pack(side="right", fill="y")
         self.tree.pack(fill="both", expand=True)
 
-    # ── navigation ───────────────────────────────────────────────────────────
+        # column sorting (note: checkbox column will also be sortable)
+        def _parse_hkd(v):
+            return safe_float(v.replace("HK$", "").replace(",", ""))
+        def _parse_pct(v):
+            return safe_float(v.replace("%", ""))
+        bind_tree_sort(self.tree, "☐", 0)
+        bind_tree_sort(self.tree, "Tag ID", 1, parse_fn=lambda v: safe_float(v))
+        bind_tree_sort(self.tree, "Tag Name", 2)
+        bind_tree_sort(self.tree, "Budget (HK$)", 3, parse_fn=_parse_hkd)
+        bind_tree_sort(self.tree, "Spent (HK$)", 4, parse_fn=_parse_hkd)
+        bind_tree_sort(self.tree, "Remaining (HK$)", 5, parse_fn=_parse_hkd)
+        bind_tree_sort(self.tree, "Used %", 6, parse_fn=_parse_pct)
 
+        self.tree.bind("<Button-1>", self._on_click_check_column)
+    
+    def _on_prev_click(self, event):
+        if self._selected_month > self._min_month:
+            self._go_prev()
+    def _on_next_click(self, event):
+        if self._selected_month < self._max_month:
+            self._go_next()
+
+    # ── navigation ───────────────────────────────────────────────────────────
     def _shift_month(self, value, delta):
         idx = (value.year * 12 + value.month - 1) + delta
         return datetime(idx // 12, idx % 12 + 1, 1)
@@ -114,11 +139,20 @@ class BudgetPage(Page):
 
     def _refresh_nav(self):
         self._month_label.config(text=self._selected_month.strftime("%B %Y"))
-        self._prev_btn.config(state="disabled" if self._selected_month <= self._min_month else "normal")
-        self._next_btn.config(state="disabled" if self._selected_month >= self._max_month else "normal")
+        prev_enabled = self._selected_month > self._min_month
+        next_enabled = self._selected_month < self._max_month
+        self._prev_btn.config(
+            bg="#e5e7eb" if prev_enabled else "#d1d5db",
+            fg=TEXT if prev_enabled else MUTED,
+            cursor="hand2" if prev_enabled else "arrow",
+        )
+        self._next_btn.config(
+            bg="#e5e7eb" if next_enabled else "#d1d5db",
+            fg=TEXT if next_enabled else MUTED,
+            cursor="hand2" if next_enabled else "arrow",
+        )
 
     # ── data loading ─────────────────────────────────────────────────────────
-
     def _compute_spending_by_tag(self, month_start, month_end):
         """Return dict {tag_id_str: total_spent} for regular (non-balance, non-irregular) txns."""
         transactions = alerts.read_transactions_csv()
@@ -161,6 +195,7 @@ class BudgetPage(Page):
         return by_tag
 
     def load(self):
+        zebra(self.tree)
         transactions = alerts.read_transactions_csv()
         # update min/max from data
         today = datetime.today()
@@ -195,6 +230,7 @@ class BudgetPage(Page):
         budgeted_tag_ids = set()
         OTHERS_TAG_ID = "0"
         others_budget = budgets.get((OTHERS_TAG_ID, "monthly"), None)
+        checked_ids = self._selected_ids.copy()
 
         for (tag_id, period), budget_amount in sorted(
             budgets.items(),
@@ -212,21 +248,20 @@ class BudgetPage(Page):
             budgeted_tag_ids.add(tag_id)
 
             row_tag = "over" if spent > budget_amount else ("warn" if pct >= 80 else "")
+            mark = "✓" if tag_id in checked_ids else ""
             self.tree.insert(
                 "", "end",
-                values=(
-                    tag_id, tag_name,
-                    f"HK${budget_amount:.2f}",
-                    f"HK${spent:.2f}",
-                    f"HK${remaining:.2f}",
-                    f"{pct:.0f}%",
-                ),
+                values=(mark, tag_id, tag_name,
+                        f"HK${budget_amount:.2f}",
+                        f"HK${spent:.2f}",
+                        f"HK${remaining:.2f}",
+                        f"{pct:.0f}%"),
                 tags=(row_tag,) if row_tag else (),
             )
+            if mark == "✓":
+                self._selected_ids.add(tag_id)
 
-        # ── Others row: combine all unbudgeted tags ────────────────────────────
-        # All spending from tags NOT in budgeted_tag_ids is aggregated here and
-        # included in the total remaining budget calculation
+        # ── Others row ───────────────────────────────────────────────────────
         others_spent = sum(amt for tid, amt in spending.items() if tid not in budgeted_tag_ids)
         total_spent += others_spent
         if others_budget is not None:
@@ -236,19 +271,17 @@ class BudgetPage(Page):
             row_tag = "over" if others_spent > others_budget else ("warn" if pct >= 80 else "")
             self.tree.insert(
                 "", "end",
-                values=(
-                    OTHERS_TAG_ID, "Others",
-                    f"HK${others_budget:.2f}",
-                    f"HK${others_spent:.2f}",
-                    f"HK${remaining:.2f}",
-                    f"{pct:.0f}%",
-                ),
+                values=("", OTHERS_TAG_ID, "Others",
+                        f"HK${others_budget:.2f}",
+                        f"HK${others_spent:.2f}",
+                        f"HK${remaining:.2f}",
+                        f"{pct:.0f}%"),
                 tags=(row_tag,) if row_tag else (),
             )
         elif others_spent > 0:
             self.tree.insert(
                 "", "end",
-                values=("–", "Others", "–", f"HK${others_spent:.2f}", "–", "–"),
+                values=("", "–", "Others", "–", f"HK${others_spent:.2f}", "–", "–"),
             )
 
         repaint_tree(self.tree)
@@ -264,24 +297,77 @@ class BudgetPage(Page):
             fg=DANGER if total_remaining < 0 else SUCCESS,
         )
 
+    # ── checkbox & selection ────────────────────────────────────────────────
+    def _on_click_check_column(self, event):
+        """Toggle checkbox on first column click."""
+        region = self.tree.identify("region", event.x, event.y)
+        if region != "cell":
+            return
+        column = self.tree.identify("column", event.x, event.y)
+        if column != "#1":
+            return
+        item = self.tree.identify("item", event.x, event.y)
+        if not item:
+            return
+        values = list(self.tree.item(item, "values"))
+        tag_id = str(values[1])  # second column (Tag ID)
+        if values[0] == "✓":
+            values[0] = ""
+            self._selected_ids.discard(tag_id)
+        else:
+            values[0] = "✓"
+            self._selected_ids.add(tag_id)
+        self.tree.item(item, values=values)
+
+    def _select_all_toggle(self):
+        """Toggle select all / deselect all for visible budget rows."""
+        children = self.tree.get_children("")
+        if not children:
+            return
+        all_checked = all(self.tree.item(ch, "values")[0] == "✓" for ch in children)
+        for ch in children:
+            vals = list(self.tree.item(ch, "values"))
+            tag_id = str(vals[1])
+            if all_checked:
+                vals[0] = ""
+                self._selected_ids.discard(tag_id)
+            else:
+                # only select rows that have a valid budget (not "–")
+                if tag_id != "–":
+                    vals[0] = "✓"
+                    self._selected_ids.add(tag_id)
+            self.tree.item(ch, values=vals)
+
+    # ── delete logic ─────────────────────────────────────────────────────────
     def _delete_selected(self):
-        selection = self.tree.selection()
-        if not selection:
-            messagebox.showwarning("No selection", "Select a budget to delete.")
-            return
-        row = self.tree.item(selection[0], "values")
-        tag_id = str(row[0])
-        if tag_id == "–":
-            messagebox.showinfo("Info", "The Others row has no budget to delete.")
-            return
+        """Delete checked budget rows, or fallback to single selection."""
+        if self._selected_ids:
+            ids_to_delete = self._selected_ids.copy()
+        else:
+            selection = self.tree.selection()
+            if not selection:
+                messagebox.showwarning("No selection", "Select a budget to delete.")
+                return
+            row = self.tree.item(selection[0], "values")
+            tag_id = str(row[1])
+            if tag_id == "–":
+                messagebox.showinfo("Info", "The Others row has no budget to delete.")
+                return
+            ids_to_delete = {tag_id}
+
+        count = len(ids_to_delete)
         period = "monthly"
-        if not messagebox.askyesno("Confirm Delete", f"Delete budget for '{row[1]}'?"):
-            return
+        if app_settings.read_settings().get("confirm_delete", True):
+            if not messagebox.askyesno("Confirm Delete", f"Delete {count} selected budget(s)?"):
+                return
+
         budgets = alerts.read_budget_csv()
-        key = (tag_id, period)
-        if key in budgets:
-            del budgets[key]
-            alerts.write_budget_csv(budgets)
+        for tid in ids_to_delete:
+            key = (tid, period)
+            if key in budgets:
+                del budgets[key]
+        alerts.write_budget_csv(budgets)
+        self._selected_ids.clear()
         self.load()
 
     def _add_dialog(self):
@@ -320,7 +406,7 @@ class AddBudgetDialog(tk.Toplevel):
             text="Tag",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         self.tag_combo = ttk.Combobox(form, values=options, state="readonly", font=FONT)
@@ -332,7 +418,7 @@ class AddBudgetDialog(tk.Toplevel):
             text="Period",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         self.period_combo = ttk.Combobox(form, values=["Monthly"], state="readonly", font=FONT)
@@ -344,7 +430,7 @@ class AddBudgetDialog(tk.Toplevel):
             text="Budget Amount (HK$)",
             bg=BG,
             fg=TEXT,
-            font=("Helvetica Neue", 10, "bold"),
+            font=(FONT_FAMILY, 10, "bold"),
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         self.amount_var = tk.StringVar()

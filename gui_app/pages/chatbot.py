@@ -5,7 +5,7 @@ import core.settings as app_settings
 from core.chatbot import build_financial_context, get_chat_response
 
 from ..base import Page
-from ..constants import ACCENT, BG, BORDER, CARD, FONT, FONT_H, TEXT
+from ..constants import ACCENT, BG, BORDER, CARD, FONT, FONT_H, TEXT, FONT_FAMILY
 from ..helpers import button, card, page_header
 
 
@@ -27,7 +27,7 @@ class ChatbotPage(Page):
             text="💬  Chat with your Budget AI",
             bg=CARD,
             fg=TEXT,
-            font=("Helvetica Neue", 13, "bold"),
+            font=(FONT_FAMILY, 13, "bold"),
         ).pack(side="left")
         button(header, "✨  Clear", self._clear_chat, color="#6b7280").pack(side="right")
 
@@ -97,7 +97,7 @@ class ChatbotPage(Page):
             text="",
             bg=CARD,
             fg="#9ca3af",
-            font=("Helvetica Neue", 9),
+            font=(FONT_FAMILY, 9),
         )
         self.status_label.pack(anchor="w", padx=16, pady=(0, 6))
 
@@ -156,7 +156,7 @@ class ChatbotPage(Page):
             text=sender,
             bg=bg_color,
             fg=label_color,
-            font=("Helvetica Neue", 9, "bold"),
+            font=(FONT_FAMILY, 9, "bold"),
             anchor="w",
         ).pack(fill="x")
         

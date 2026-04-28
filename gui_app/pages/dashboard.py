@@ -1,7 +1,6 @@
 import tkinter as tk
 from datetime import datetime, timedelta
 from tkinter import ttk
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from collections import defaultdict
@@ -10,8 +9,8 @@ import core.alerts as alerts
 import core.transaction as transaction
 
 from ..base import Page
-from ..constants import ACCENT, BG, CARD, DANGER, FONT_SM, MUTED, SUCCESS, TEXT
 from ..helpers import capture_output, card, page_header, safe_read_tags
+from ..constants import BG, CARD, DANGER, FONT_H, FONT_SM, MUTED, SUCCESS, TEXT, ACCENT, FONT_FAMILY
 
 
 class DashboardPage(Page):
@@ -21,11 +20,18 @@ class DashboardPage(Page):
         # ── KPI CARDS ────────────────────────────────────────────────────
         kpi_container = tk.Frame(self, bg=BG)
         kpi_container.pack(fill="x", padx=24, pady=(14, 20))
+        
+        self._month_pct_label = None
+        self._today_val, self._today_card = self._kpi_card(kpi_container, "Today", ACCENT, "💰")
+        self._week_val, self._week_card = self._kpi_card(kpi_container, "This Week", "#8b5cf6", "📊")
+        self._month_val, self._month_card = self._kpi_card(kpi_container, "This Month", "#f59e0b", "📈")
+        self._safe_val, self._safe_card = self._kpi_card(kpi_container, "Budget Health", SUCCESS, "✓")
 
-        self._today_val = self._kpi_card(kpi_container, "Today", ACCENT, "💰")
-        self._week_val = self._kpi_card(kpi_container, "This Week", "#8b5cf6", "📊")
-        self._month_val = self._kpi_card(kpi_container, "This Month", "#f59e0b", "📈")
-        self._safe_val = self._kpi_card(kpi_container, "Budget Health", SUCCESS, "✓")
+        # KPI click navigation
+        self._today_card.bind("<Button-1>", lambda e: self._navigate_filtered("today"))
+        self._week_card.bind("<Button-1>", lambda e: self._navigate_filtered("week"))
+        self._month_card.bind("<Button-1>", lambda e: self._navigate_filtered("month"))
+        self._safe_card.bind("<Button-1>", lambda e: self._navigate_tab("💰  Budgets"))
 
         # ── CHARTS SECTION ───────────────────────────────────────────────
         charts_container = tk.Frame(self, bg=BG)
@@ -36,11 +42,9 @@ class DashboardPage(Page):
         chart_left.pack(side="left", fill="both", expand=True, padx=(0, 12))
 
         tk.Label(
-            chart_left,
-            text="7-Day Spending Trend",
-            bg=CARD,
-            fg=TEXT,
-            font=("Helvetica Neue", 11, "bold"),
+            chart_left, text="7-Day Spending Trend",
+            bg=CARD, fg=TEXT,
+            font=(FONT_FAMILY, 11, "bold"),
         ).pack(anchor="w", padx=12, pady=(12, 8))
 
         self.fig_trend = Figure(figsize=(5, 3), dpi=75, facecolor=CARD, edgecolor="none")
@@ -53,11 +57,9 @@ class DashboardPage(Page):
         chart_right.pack(side="right", fill="both", expand=True, padx=(12, 0))
 
         tk.Label(
-            chart_right,
-            text="Category Breakdown (This Month)",
-            bg=CARD,
-            fg=TEXT,
-            font=("Helvetica Neue", 11, "bold"),
+            chart_right, text="Category Breakdown (This Month)",
+            bg=CARD, fg=TEXT,
+            font=(FONT_FAMILY, 11, "bold"),
         ).pack(anchor="w", padx=12, pady=(12, 8))
 
         self.fig_pie = Figure(figsize=(5, 3), dpi=75, facecolor=CARD, edgecolor="none")
@@ -67,11 +69,9 @@ class DashboardPage(Page):
 
         # ── ALERTS SECTION ───────────────────────────────────────────────
         alert_label = tk.Label(
-            self,
-            text="Status & Alerts",
-            bg=BG,
-            fg=TEXT,
-            font=("Helvetica Neue", 12, "bold"),
+            self, text="Status & Alerts",
+            bg=BG, fg=TEXT,
+            font=(FONT_FAMILY, 12, "bold"),
         )
         alert_label.pack(anchor="w", padx=24, pady=(0, 8))
 
@@ -101,39 +101,86 @@ class DashboardPage(Page):
         self.alert_tree.tag_configure("ok", background="#ecfdf5", foreground="#065f46")
         self.alert_tree.tag_configure("info", background="#f8fafc", foreground="#334155")
 
+        # Double-click alert → navigate to Budgets
+        self.alert_tree.bind("<Double-1>", lambda e: self._navigate_tab("💰  Budgets"))
+
         scrollbar = ttk.Scrollbar(table_wrap, orient="vertical", command=self.alert_tree.yview)
         self.alert_tree.configure(yscrollcommand=scrollbar.set)
         self.alert_tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
     def _kpi_card(self, parent, label, accent_color, icon):
-        """Modern KPI card with icon and value."""
-        card_frame = tk.Frame(parent, bg=CARD, relief="flat", highlightbackground=accent_color, highlightthickness=2)
+        """Modern KPI card with icon and value. Returns (value_label, card_frame)."""
+        card_frame = tk.Frame(parent, bg=CARD, relief="flat",
+                              highlightbackground=accent_color, highlightthickness=2)
         card_frame.pack(side="left", fill="both", expand=True, padx=6, pady=4)
 
-        # Top section with icon
         top = tk.Frame(card_frame, bg=CARD)
         top.pack(fill="x", padx=16, pady=(16, 8))
-        tk.Label(top, text=icon, bg=CARD, fg=accent_color, font=("Helvetica Neue", 24)).pack(side="left")
-        tk.Label(top, text=label.upper(), bg=CARD, fg=MUTED, font=("Helvetica Neue", 8, "bold")).pack(
-            side="left", padx=(12, 0), anchor="w"
-        )
+        tk.Label(top, text=icon, bg=CARD, fg=accent_color,
+                 font=(FONT_FAMILY, 24)).pack(side="left")
+        tk.Label(top, text=label.upper(), bg=CARD, fg=MUTED,
+                 font=(FONT_FAMILY, 8, "bold")).pack(side="left", padx=(12, 0), anchor="w")
 
-        # Value display
-        value_label = tk.Label(card_frame, text="HK$0.00", bg=CARD, fg=accent_color, font=("Helvetica Neue", 18, "bold"))
+        value_label = tk.Label(card_frame, text="HK$0.00", bg=CARD, fg=accent_color,
+                               font=(FONT_FAMILY, 18, "bold"))
         value_label.pack(anchor="w", padx=16, pady=(0, 16))
-        return value_label
+
+        # ── forward clicks from any descendant to the card_frame ─────────
+        def _forward_click(event):
+            card_frame.event_generate("<Button-1>", when="tail")
+
+        def _make_clickable(widget):
+            widget.configure(cursor="hand2")
+            widget.bind("<Button-1>", _forward_click, add="+")
+            for child in widget.winfo_children():
+                _make_clickable(child)
+
+        _make_clickable(card_frame)
+
+        return value_label, card_frame
 
     def _alert_chip(self, parent, label, color):
         chip = tk.Frame(parent, bg="#f8fafc", highlightbackground="#e5e7eb", highlightthickness=1)
         chip.pack(side="left", padx=(0, 8))
-        tk.Label(chip, text=label.upper(), bg="#f8fafc", fg=MUTED, font=("Helvetica Neue", 8, "bold")).pack(
-            padx=10,
-            pady=(6, 0),
-        )
-        value = tk.Label(chip, text="0", bg="#f8fafc", fg=color, font=("Helvetica Neue", 14, "bold"))
+        tk.Label(chip, text=label.upper(), bg="#f8fafc", fg=MUTED,
+                 font=(FONT_FAMILY, 8, "bold")).pack(padx=10, pady=(6, 0))
+        value = tk.Label(chip, text="0", bg="#f8fafc", fg=color,
+                         font=(FONT_FAMILY, 14, "bold"))
         value.pack(padx=10, pady=(0, 6))
         return value
+
+    def _navigate_tab(self, tab_name):
+        """Switch to the named sidebar tab."""
+        top = self.winfo_toplevel()
+        pages = getattr(top, "_pages", {})
+        for i, btn in enumerate(getattr(top, "_nav_buttons", [])):
+            if btn.cget("text").strip() == tab_name:
+                top._select_tab(i)
+                if tab_name in pages:
+                    pages[tab_name].load()
+                break
+
+    def _navigate_filtered(self, period):
+        """Jump to Transactions page with date filter set."""
+        today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+        if period == "today":
+            from_d = today.strftime("%Y-%m-%d")
+            to_d = from_d
+        elif period == "week":
+            from_d = (today - timedelta(days=6)).strftime("%Y-%m-%d")
+            to_d = today.strftime("%Y-%m-%d")
+        else:  # month
+            from_d = today.replace(day=1).strftime("%Y-%m-%d")
+            to_d = today.strftime("%Y-%m-%d")
+
+        self._navigate_tab("💳  Transactions")
+        top = self.winfo_toplevel()
+        tx_page = getattr(top, "_pages", {}).get("💳  Transactions")
+        if tx_page:
+            tx_page.date_from_var.set(from_d)
+            tx_page.date_to_var.set(to_d)
+            tx_page._apply_search()
 
     def _parse_alert_lines(self, output):
         parsed = []
@@ -144,14 +191,30 @@ class DashboardPage(Page):
             if line.startswith("===") or line.startswith("---"):
                 continue
             if line.startswith("[") and "]" in line:
-                severity = line[1 : line.index("]")].strip().lower()
-                message = line[line.index("]") + 1 :].strip()
+                severity = line[1:line.index("]")].strip().lower()
+                message = line[line.index("]") + 1:].strip()
                 parsed.append((severity or "info", message or line))
             else:
                 parsed.append(("info", line))
         return parsed
 
+    def _update_alert_tags(self):
+        """Update alert tree tag colours for the current theme."""
+        top = self.winfo_toplevel()
+        dark = getattr(top, "_dark", False)
+        if dark:
+            self.alert_tree.tag_configure("warning", background="#78350f", foreground="#fef3c7")
+            self.alert_tree.tag_configure("alert", background="#7f1d1d", foreground="#fee2e2")
+            self.alert_tree.tag_configure("ok", background="#064e3b", foreground="#d1fae5")
+            self.alert_tree.tag_configure("info", background="#1e293b", foreground="#cbd5e1")
+        else:
+            self.alert_tree.tag_configure("warning", background="#fff7ed", foreground="#9a3412")
+            self.alert_tree.tag_configure("alert", background="#fef2f2", foreground="#991b1b")
+            self.alert_tree.tag_configure("ok", background="#ecfdf5", foreground="#065f46")
+            self.alert_tree.tag_configure("info", background="#f8fafc", foreground="#334155")
+
     def _render_alerts(self, output):
+        self._update_alert_tags()
         lines = self._parse_alert_lines(output)
         if not lines:
             lines = [("ok", "No active alerts. You are all set.")]
@@ -179,7 +242,7 @@ class DashboardPage(Page):
             dates = [d[0].strftime("%a").upper() for d in days_data]
             amounts = [d[1] for d in days_data]
             colors = [ACCENT if amt > 0 else MUTED for amt in amounts]
-            
+
             bars = self.ax_trend.bar(range(len(dates)), amounts, color=colors, width=0.7)
             self.ax_trend.set_xticks(range(len(dates)))
             self.ax_trend.set_xticklabels(dates, fontsize=8, color=TEXT)
@@ -189,14 +252,15 @@ class DashboardPage(Page):
             self.ax_trend.spines["left"].set_color(MUTED)
             self.ax_trend.spines["bottom"].set_color(MUTED)
             self.ax_trend.tick_params(colors=MUTED, labelsize=8)
-            
-            # Add value labels on bars
+
             for bar, amt in zip(bars, amounts):
                 height = bar.get_height()
                 self.ax_trend.text(bar.get_x() + bar.get_width() / 2., height,
-                                 f"HK${amt:.0f}", ha="center", va="bottom", fontsize=7, color=TEXT)
+                                   f"HK${amt:.0f}", ha="center", va="bottom",
+                                   fontsize=7, color=TEXT)
         else:
-            self.ax_trend.text(0.5, 0.5, "No data", ha="center", va="center", color=MUTED, transform=self.ax_trend.transAxes)
+            self.ax_trend.text(0.5, 0.5, "No data", ha="center", va="center",
+                               color=MUTED, transform=self.ax_trend.transAxes)
 
         self.fig_trend.tight_layout()
         self.canvas_trend.draw()
@@ -209,24 +273,26 @@ class DashboardPage(Page):
         if by_category:
             labels = list(by_category.keys())
             amounts = list(by_category.values())
-            colors = ["#3b82f6", "#8b5cf6", "#f59e0b", "#10b981", "#ef4444", "#ec4899", "#06b6d4", "#f97316"]
+            colors = ["#3b82f6", "#8b5cf6", "#f59e0b", "#10b981",
+                      "#ef4444", "#ec4899", "#06b6d4", "#f97316"]
             colors = colors[:len(labels)]
-            
+
             wedges, texts, autotexts = self.ax_pie.pie(
                 amounts, labels=labels, autopct="%1.1f%%",
-                colors=colors, startangle=90, textprops={"fontsize": 8, "color": TEXT}
+                colors=colors, startangle=90,
+                textprops={"fontsize": 8, "color": TEXT},
             )
             for autotext in autotexts:
                 autotext.set_color("white")
                 autotext.set_weight("bold")
         else:
-            self.ax_pie.text(0.5, 0.5, "No data", ha="center", va="center", color=MUTED, transform=self.ax_pie.transAxes)
+            self.ax_pie.text(0.5, 0.5, "No data", ha="center", va="center",
+                             color=MUTED, transform=self.ax_pie.transAxes)
 
         self.fig_pie.tight_layout()
         self.canvas_pie.draw()
 
     def load(self):
-        # Load transactions
         try:
             transactions = transaction._load_transactions()
             assignments = transaction._load_assignments()
@@ -236,7 +302,6 @@ class DashboardPage(Page):
             assignments = []
             tag_dict = {}
 
-        # KPI calculations
         today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
         week_cutoff = today - timedelta(days=6)
 
@@ -260,27 +325,45 @@ class DashboardPage(Page):
         self._today_val.config(text=f"HK${today_total:.2f}")
         self._week_val.config(text=f"HK${week_total:.2f}")
         self._month_val.config(text=f"HK${month_total:.2f}")
-
-        # Budget health
+        # show percentage of monthly budget
         try:
             budgets = alerts.read_budget_csv()
-            total_budget = sum(amount for (_, period), amount in budgets.items() if period == "monthly")
+            total_budget = sum(amount for (_, period), amount in budgets.items()
+                               if period == "monthly")
+            pct = (month_total / total_budget * 100) if total_budget > 0 else 0
+            if self._month_pct_label is None:
+                self._month_pct_label = tk.Label(
+                    self._month_card,
+                    text="",
+                    bg=CARD,
+                    fg=MUTED,
+                    font=(FONT_FAMILY, 9),
+                )
+                self._month_pct_label.pack(anchor="w", padx=16, pady=(0, 8))
+            self._month_pct_label.config(text=f"{pct:.0f}% of budget")
+        except Exception:
+            if self._month_pct_label is not None:
+                self._month_pct_label.config(text="")
+
+        try:
+            budgets = alerts.read_budget_csv()
+            total_budget = sum(amount for (_, period), amount in budgets.items()
+                               if period == "monthly")
             days_left = max(1, alerts._days_in_month(today) - today.day)
             safe_day = (total_budget - month_total) / days_left if total_budget else 0.0
-            self._safe_val.config(text=f"HK${safe_day:.2f}", fg=SUCCESS if safe_day >= 0 else DANGER)
+            self._safe_val.config(text=f"HK${safe_day:.2f}",
+                                  fg=SUCCESS if safe_day >= 0 else DANGER)
         except Exception:
             self._safe_val.config(text="HK$0.00", fg=MUTED)
 
-        # Chart data: 7-day trend
         days_data = []
         for i in range(6, -1, -1):
             day = today - timedelta(days=i)
             day_total = sum(float(t["Amount"]) for t in transactions
-                          if datetime.strptime(t["Date"], "%Y-%m-%d").date() == day.date())
+                            if datetime.strptime(t["Date"], "%Y-%m-%d").date() == day.date())
             days_data.append((day, day_total))
         self._draw_spending_trend(days_data)
 
-        # Chart data: category breakdown (this month)
         by_category = defaultdict(float)
         for trans in transactions:
             try:
@@ -288,7 +371,6 @@ class DashboardPage(Page):
                 if date_value.year == today.year and date_value.month == today.month:
                     trans_id = trans["ID"]
                     amount = float(trans["Amount"])
-                    # Find tag for this transaction
                     for assign in assignments:
                         if assign["ID"] == trans_id:
                             tag_id = assign["TagID"]
@@ -301,6 +383,5 @@ class DashboardPage(Page):
 
         self._draw_category_pie(by_category)
 
-        # Alerts
         output = capture_output(alerts.check_all_alerts)
         self._render_alerts(output)
