@@ -518,6 +518,12 @@ class TransactionsPage(Page):
         AddPeerBalanceDialog(self, on_save=self.load)
 
     def _import_csv(self):
+        messagebox.showinfo(
+        "Import CSV Format",
+        "Expected CSV columns:\n"
+        "Date, Name, Transaction Description(optional), Amount, Tag_type, Tag_name\n\n"
+        "Date format: YYYY-MM-DD"
+        )
         path = filedialog.askopenfilename(
             title="Select CSV File",
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
