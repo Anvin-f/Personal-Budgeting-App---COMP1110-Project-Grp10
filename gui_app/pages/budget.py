@@ -5,6 +5,7 @@ from tkinter import messagebox, ttk
 
 import core.alerts as alerts
 import core.adjustments as adjustments
+import core.settings as app_settings
 
 from ..base import Page
 from ..constants import ACCENT, BG, BORDER, CARD, DANGER, FONT, FONT_H, FONT_SM, MUTED, SUCCESS, TEXT, FONT_FAMILY
@@ -37,25 +38,23 @@ class BudgetPage(Page):
         nav = tk.Frame(self, bg=BG)
         nav.pack(fill="x", padx=24, pady=(0, 8))
 
-        self._prev_btn = tk.Button(
+        self._prev_btn = tk.Label(
             nav, text="< Previous",
             font=(FONT_FAMILY, 9, "bold"), bg="#e5e7eb", fg=TEXT,
-            relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-            command=self._go_prev,
+            relief="flat", bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._prev_btn.bind("<Button-1>", self._on_prev_click)
         self._prev_btn.pack(side="left")
-
-        self._month_label = tk.Label(nav, text="", bg=BG, fg=TEXT,
-                                     font=(FONT_FAMILY, 11, "bold"))
-        self._month_label.pack(side="left", padx=12)
-
-        self._next_btn = tk.Button(
+        self._next_btn = tk.Label(
             nav, text="Next >",
             font=(FONT_FAMILY, 9, "bold"), bg="#e5e7eb", fg=TEXT,
-            relief="flat", bd=0, padx=10, pady=5, cursor="hand2",
-            command=self._go_next,
+            relief="flat", bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._next_btn.bind("<Button-1>", self._on_next_click)
         self._next_btn.pack(side="left")
+        self._month_label = tk.Label(nav, text="", bg=BG, fg=TEXT,
+                             font=(FONT_FAMILY, 11, "bold"))
+        self._month_label.pack(side="left", padx=12)
 
         # ── totals bar ───────────────────────────────────────────────────────
         totals_frame = tk.Frame(self, bg=CARD, bd=0, relief="flat")
@@ -117,6 +116,13 @@ class BudgetPage(Page):
         bind_tree_sort(self.tree, "Used %", 6, parse_fn=_parse_pct)
 
         self.tree.bind("<Button-1>", self._on_click_check_column)
+    
+    def _on_prev_click(self, event):
+        if self._selected_month > self._min_month:
+            self._go_prev()
+    def _on_next_click(self, event):
+        if self._selected_month < self._max_month:
+            self._go_next()
 
     # ── navigation ───────────────────────────────────────────────────────────
     def _shift_month(self, value, delta):
@@ -133,8 +139,18 @@ class BudgetPage(Page):
 
     def _refresh_nav(self):
         self._month_label.config(text=self._selected_month.strftime("%B %Y"))
-        self._prev_btn.config(state="disabled" if self._selected_month <= self._min_month else "normal")
-        self._next_btn.config(state="disabled" if self._selected_month >= self._max_month else "normal")
+        prev_enabled = self._selected_month > self._min_month
+        next_enabled = self._selected_month < self._max_month
+        self._prev_btn.config(
+            bg="#e5e7eb" if prev_enabled else "#d1d5db",
+            fg=TEXT if prev_enabled else MUTED,
+            cursor="hand2" if prev_enabled else "arrow",
+        )
+        self._next_btn.config(
+            bg="#e5e7eb" if next_enabled else "#d1d5db",
+            fg=TEXT if next_enabled else MUTED,
+            cursor="hand2" if next_enabled else "arrow",
+        )
 
     # ── data loading ─────────────────────────────────────────────────────────
     def _compute_spending_by_tag(self, month_start, month_end):

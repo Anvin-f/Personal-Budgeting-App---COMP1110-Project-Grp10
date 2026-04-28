@@ -36,86 +36,71 @@ class AnalysisPage(Page):
         toggle_frame = tk.Frame(nav, bg=BG)
         toggle_frame.pack(side="right", padx=(8, 0))
 
-        self._month_toggle = tk.Button(
+        self._month_toggle = tk.Label(
             toggle_frame,
             text="Month",
             font=(FONT_FAMILY, 9, "bold"),
             bg="#3b82f6",
             fg="white",
             relief="flat",
-            bd=0,
-            padx=10,
-            pady=5,
-            cursor="hand2",
-            command=lambda: self._set_view_mode("month"),
+            bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._month_toggle.bind("<Button-1>", lambda e: self._set_view_mode("month"))
         self._month_toggle.pack(side="left", padx=(0, 2))
 
-        self._year_toggle = tk.Button(
+        self._year_toggle = tk.Label(
             toggle_frame,
             text="Year",
             font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
-            bd=0,
-            padx=10,
-            pady=5,
-            cursor="hand2",
-            command=lambda: self._set_view_mode("year"),
+            bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._year_toggle.bind("<Button-1>", lambda e: self._set_view_mode("year"))
         self._year_toggle.pack(side="left")
 
         # Divider
         tk.Frame(toggle_frame, bg=BORDER, width=1, height=20).pack(side="left", padx=8)
 
-        self._bar_toggle = tk.Button(
+        self._bar_toggle = tk.Label(
             toggle_frame,
             text="Bar",
             font=(FONT_FAMILY, 9, "bold"),
             bg="#3b82f6",
             fg="white",
             relief="flat",
-            bd=0,
-            padx=10,
-            pady=5,
-            cursor="hand2",
-            command=lambda: self._set_chart_type("bar"),
+            bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._bar_toggle.bind("<Button-1>", lambda e: self._set_chart_type("bar"))
         self._bar_toggle.pack(side="left", padx=(0, 2))
 
-        self._pie_toggle = tk.Button(
+        self._pie_toggle = tk.Label(
             toggle_frame,
             text="Pie",
             font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
-            bd=0,
-            padx=10,
-            pady=5,
-            cursor="hand2",
-            command=lambda: self._set_chart_type("pie"),
+            bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._pie_toggle.bind("<Button-1>", lambda e: self._set_chart_type("pie"))
         self._pie_toggle.pack(side="left")
 
         # ── Month navigation ─────────────────────────────────────────────────
         self._month_nav_frame = tk.Frame(nav, bg=BG)
         self._month_nav_frame.pack(side="left")
 
-        self.prev_btn = tk.Button(
+        self.prev_btn = tk.Label(
             self._month_nav_frame,
             text="< Previous",
             font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
-            bd=0,
-            padx=10,
-            pady=5,
-            cursor="hand2",
-            command=self._go_prev_month,
+            bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self.prev_btn.bind("<Button-1>", self._on_prev_month_click)
         self.prev_btn.pack(side="left")
 
         self.month_label = tk.Label(
@@ -127,39 +112,45 @@ class AnalysisPage(Page):
         )
         self.month_label.pack(side="left", padx=12)
 
-        self.next_btn = tk.Button(
+        self.next_btn = tk.Label(
             self._month_nav_frame,
             text="Next >",
             font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
-            bd=0,
-            padx=10,
-            pady=5,
-            cursor="hand2",
-            command=self._go_next_month,
+            bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self.next_btn.bind("<Button-1>", self._on_next_month_click)
         self.next_btn.pack(side="left")
 
         # ── Year navigation ──────────────────────────────────────────────────
         self._year_nav_frame = tk.Frame(nav, bg=BG)
         # starts hidden; shown when year mode is active
 
-        self._prev_year_btn = tk.Button(
+        self._prev_year_btn = tk.Label(
             self._year_nav_frame,
             text="< Previous",
             font=(FONT_FAMILY, 9, "bold"),
             bg="#e5e7eb",
             fg=TEXT,
             relief="flat",
-            bd=0,
-            padx=10,
-            pady=5,
-            cursor="hand2",
-            command=self._go_prev_year,
+            bd=2, padx=10, pady=5, cursor="hand2",
         )
+        self._prev_year_btn.bind("<Button-1>", self._on_prev_year_click)
         self._prev_year_btn.pack(side="left")
+
+        self._next_year_btn = tk.Label(
+            self._year_nav_frame,
+            text="Next >",
+            font=(FONT_FAMILY, 9, "bold"),
+            bg="#e5e7eb",
+            fg=TEXT,
+            relief="flat",
+            bd=2, padx=10, pady=5, cursor="hand2",
+        )
+        self._next_year_btn.bind("<Button-1>", self._on_next_year_click)
+        self._next_year_btn.pack(side="left")
 
         self._year_label = tk.Label(
             self._year_nav_frame,
@@ -169,21 +160,6 @@ class AnalysisPage(Page):
             font=(FONT_FAMILY, 11, "bold"),
         )
         self._year_label.pack(side="left", padx=12)
-
-        self._next_year_btn = tk.Button(
-            self._year_nav_frame,
-            text="Next >",
-            font=(FONT_FAMILY, 9, "bold"),
-            bg="#e5e7eb",
-            fg=TEXT,
-            relief="flat",
-            bd=0,
-            padx=10,
-            pady=5,
-            cursor="hand2",
-            command=self._go_next_year,
-        )
-        self._next_year_btn.pack(side="left")
 
         paned = tk.PanedWindow(self, orient="horizontal", bg=BG, sashwidth=6, sashrelief="flat")
         paned.pack(fill="both", expand=True, padx=24, pady=(10, 18))
@@ -320,6 +296,22 @@ class AnalysisPage(Page):
         bind_tree_sort(self.summary_peer_tree, "period_net", 1, parse_fn=_parse_hkd)
         bind_tree_sort(self.summary_peer_tree, "all_time_net", 2, parse_fn=_parse_hkd)
         bind_tree_sort(self.summary_peer_tree, "trend", 3)
+    
+    def _on_prev_month_click(self, event):
+        if self._selected_month > self._min_month:
+            self._go_prev_month()
+
+    def _on_next_month_click(self, event):
+        if self._selected_month < self._max_month:
+            self._go_next_month()
+
+    def _on_prev_year_click(self, event):
+        if self._selected_year > self._min_year:
+            self._go_prev_year()
+
+    def _on_next_year_click(self, event):
+        if self._selected_year < self._max_year:
+            self._go_next_year()
 
     def _set_view_mode(self, mode):
         self._view_mode = mode
@@ -353,17 +345,33 @@ class AnalysisPage(Page):
 
     def _refresh_month_nav(self):
         self.month_label.config(text=self._selected_month.strftime("%B %Y"))
-        prev_state = "disabled" if self._selected_month <= self._min_month else "normal"
-        next_state = "disabled" if self._selected_month >= self._max_month else "normal"
-        self.prev_btn.config(state=prev_state)
-        self.next_btn.config(state=next_state)
+        prev_enabled = self._selected_month > self._min_month
+        next_enabled = self._selected_month < self._max_month
+        self.prev_btn.config(
+            bg="#e5e7eb" if prev_enabled else "#d1d5db",
+            fg=TEXT if prev_enabled else MUTED,
+            cursor="hand2" if prev_enabled else "arrow",
+        )
+        self.next_btn.config(
+            bg="#e5e7eb" if next_enabled else "#d1d5db",
+            fg=TEXT if next_enabled else MUTED,
+            cursor="hand2" if next_enabled else "arrow",
+        )
 
     def _refresh_year_nav(self):
         self._year_label.config(text=str(self._selected_year))
-        prev_state = "disabled" if self._selected_year <= self._min_year else "normal"
-        next_state = "disabled" if self._selected_year >= self._max_year else "normal"
-        self._prev_year_btn.config(state=prev_state)
-        self._next_year_btn.config(state=next_state)
+        prev_enabled = self._selected_year > self._min_year
+        next_enabled = self._selected_year < self._max_year
+        self._prev_year_btn.config(
+            bg="#e5e7eb" if prev_enabled else "#d1d5db",
+            fg=TEXT if prev_enabled else MUTED,
+            cursor="hand2" if prev_enabled else "arrow",
+        )
+        self._next_year_btn.config(
+            bg="#e5e7eb" if next_enabled else "#d1d5db",
+            fg=TEXT if next_enabled else MUTED,
+            cursor="hand2" if next_enabled else "arrow",
+        )
 
     def _go_prev_month(self):
         self._selected_month = self._shift_month(self._selected_month, -1)

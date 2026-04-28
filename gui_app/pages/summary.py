@@ -111,6 +111,7 @@ class SummaryPage(Page):
 
         self.canvas = canvas
         self._add_placeholder()
+        self._generating = False
 
     def _on_canvas_configure(self, event):
         """Update the scroll region when canvas is resized."""
@@ -172,21 +173,17 @@ class SummaryPage(Page):
         tk.Frame(section, bg=BORDER, height=1).pack(fill="x", pady=(8, 0))
 
     def _generate_summary(self):
-        """Generate AI summary."""
-        self.generate_btn.configure(state="disabled")
+        if self._generating:
+            return
+        self._generating = True
         self._clear_content()
-
         # Show loading state
         loading = tk.Label(
             self.content_frame,
             text="🔄  Generating your financial summary...",
-            bg=CARD,
-            fg="#9ca3af",
-            font=(FONT_FAMILY, 11),
+            bg=CARD, fg="#9ca3af", font=(FONT_FAMILY, 11),
         )
         loading.pack(pady=40)
-
-        # Generate summary in background thread
         threading.Thread(target=self._fetch_summary, daemon=True).start()
 
     def _fetch_summary(self):
@@ -233,6 +230,8 @@ class SummaryPage(Page):
             self._add_section("Financial Summary", summary_text)
 
         self.generate_btn.configure(state="normal")
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self._generating = False
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _parse_summary(self, text):
@@ -282,3 +281,4 @@ class SummaryPage(Page):
         error_label.pack(pady=40)
 
         self.generate_btn.configure(state="normal")
+        self._generating = False
