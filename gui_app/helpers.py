@@ -110,10 +110,10 @@ def repaint_tree(tree):
         tree.item(item_id, tags=("odd" if idx % 2 else "even",))
 
 
-def bind_tree_sort(tree, col_id, col_idx, parse_fn=None):
+def bind_tree_sort(tree, col_id, _col_idx, parse_fn=None):
     """Make a Treeview column sortable by clicking its header.
     *col_id*   – column name as passed to tree.heading().
-    *col_idx*  – zero-based column index (used for tree.set() if col_id differs).
+    *_col_idx* – reserved for backward-compatible call sites.
     *parse_fn* – optional parser for cell text (e.g. strip HK$, parse %)."""
     if not hasattr(tree, "_sort_states"):
         tree._sort_states = {}  # col_id -> reverse bool

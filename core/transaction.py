@@ -91,16 +91,6 @@ def _save_assignments(assignments):
     except Exception as e:
         print(f"Error saving tag assignments: {e}")
 
-
-def _list_all_tags():
-    tags = _load_tags()
-    if not tags:
-        print("No Tags Found.")
-    else:
-        print("Avalibale Tags:")
-        for tag in tags:
-            print(f"{tag['Tag_id']}. {tag['Tag_type']} - {tag['Tag_name']}")
-
 def _get_next_transaction_id(transactions):
     if not transactions:
         return "1"
@@ -114,98 +104,6 @@ def _get_next_tag_id(tags):
     else:
         max_id = max(int(t["Tag_id"]) for t in tags)
         return str(max_id + 1)
-
-# --------------------------------------------------------------
-# Transaction management functions
-
-def add_transaction():
-
-    print("\n---Add New Transaction---")
-
-    while True:
-        date = input("\nEnter date (YYYY-MM-DD): ").strip()
-        if _validate_date(date):
-            break
-        print("\n[Error] Invalid date format. Please enter in YYYY-MM-DD format.")
-    
-    while True:
-        name = input("\nEnter transaction name (e.g. Lunch): ").strip()
-        if name:
-            break
-        print("\n[Error] Transaction name cannot be empty. Please enter a valid name.")
-
-    transaction_description = input("\nEnter transaction description (optional, press Enter to skip): ").strip()
-
-    while True:
-        amount = input("\nEnter transaction amount (positive number): ").strip()
-        valid_amount = _validate_amount(amount)
-        if valid_amount is not None:
-            break
-        print("\n[Error] Invalid amount. Please enter a positive number.")
-    
-    transactions = _load_transactions()
-    new_id = _get_next_transaction_id(transactions)
-
-    new_transaction = {
-        "ID": new_id,
-        "Date": date,
-        "Name": name,
-        "Transaction Description": transaction_description,
-        "Amount": amount
-    }
-
-    transactions.append(new_transaction)
-    _save_transactions(transactions)
-    print(f"\n[Success] Transaction #{new_id} '{name}' added successfully!")
-
-    
-    # offer tags to transaction(allow multiple tags)
-    tags = _load_tags()
-    if tags:
-        tag_choice = input("\nWould you like to tag this transaction? (y/n): ").strip().lower()
-        if tag_choice == "y":
-            _assign_tags_to_transaction(new_id, tags)
-    else:
-        print("[Error] No tags found. Check that data/tags.csv exists and has data.")
-
-
-def _assign_tags_to_transaction(transaction_id, tags):
-    _list_all_tags()
-    assignments = _load_assignments() or []
-    assigned_count = 0
-    assigned_tags = []
-
-    while True:
-        tag_id_input = input(f"\nEnter TagID(s) to tag transaction #{transaction_id} (separated by ';' if multiple, e.g. '1;2') or press Enter to skip: ").strip().split(';')
-        
-        if tag_id_input == ['']:
-            print("No tags assigned.")
-            break
-
-        for tag_id in tag_id_input:
-            matching = [t for t in tags if t["Tag_id"] == tag_id]
-
-            if not matching:
-                print(f"[Error] No tag with TagID '{tag_id}'. Skipped.")
-                continue
-
-            #check to avoid duplicate assignment
-            already_assigned = [a for a in assignments if a['ID'] == transaction_id and a['TagID'] == tag_id]
-            if already_assigned:
-                print(f"  [Warning] Tag '{matching[0]['Tag_type']}' is already assigned to transaction #{transaction_id}. Skipping duplicate.")
-                continue
-            
-            assignments.append({"ID": transaction_id, "TagID": tag_id})
-            assigned_count += 1
-            assigned_tags.append(matching[0]["Tag_type"])
-            print(f"  [Success] Assigned tag '{matching[0]['Tag_type']}' to transaction #{transaction_id}.")
-
-        if assigned_count > 0:
-            _save_assignments(assignments)
-            print(f"\n[Success] Assigned {assigned_count} tag(s) to Transaction #{transaction_id}: {', '.join(assigned_tags)}")
-            break
-        else:
-            print("No valid tags assigned. Please try again or press Enter to skip.")
 
 def add_transaction_from_csv():
     print("\n---Import Transactions from CSV File---")
@@ -223,7 +121,8 @@ def add_transaction_from_csv():
     imported_rows = []
 
     try:
-        with open(file_path, mode='r', newline='') as file:
+        # Use a tolerant UTF-8 reader so CSV imports do not fail on odd bytes.
+        with open(file_path, mode='r', newline='', encoding='utf-8-sig', errors='replace') as file:
             reader = csv.DictReader(file)
 
             required_columns = {"Date", "Name", "Amount"}
@@ -350,52 +249,6 @@ def _link_tag_to_transaction(transaction_id, tag_type, tag_name):
         print(f"  [Info] Linked transaction {transaction_id} to tag '{tag_type} - {tag_name}'.")
     else:
         print(f"  [Info] Transaction {transaction_id} already linked to tag '{tag_type} - {tag_name}'.")
-
-def delete_transaction():
-    print("\n--- Delete Transaction ---\n")
-    list_transactions()
-
-    transactions = _load_transactions()
-    if not transactions:
-        print("[Info] No transactions to delete.")
-        return
-
-    while True:
-        id_input = input("\nEnter a ID to delete (or 'cancel' to go back): ").strip()
-        if id_input.lower() == "cancel":
-            print("Deletion cancelled.")
-            return
-        
-        matching = [t for t in transactions if t["ID"] == id_input]
-        if matching:
-            t = matching[0]
-            print(f"\nAbout to delete:")
-            print(f"  ID {t['ID']}  |  {t['Date']}  |  {t['Name']}  |  HK${t['Amount']}")
-
-            confirm = input("Confirm? (yes / no): ").strip().lower()
-            if confirm == "yes":
-                transactions = [t for t in transactions if t["ID"] != id_input]
-                _save_transactions(transactions)
-
-                assignments = _load_assignments()
-                assignments = [a for a in assignments if a["ID"] != id_input]
-                _save_assignments(assignments)
-
-                print(f"[Success] Transaction #{id_input} deleted (and its tag assignments removed).")
-            else:
-                print("Deletion cancelled.")
-            
-        else:
-            print(f"[Error] No transaction with ID '{id_input}'. Try again.")
-
-def list_transactions(): #list all transactions
-    print("Transaction List:")
-    transactions = _load_transactions()
-    if not transactions:
-        print("No transactions found.")
-    else:
-        for transaction in transactions:
-            print(f"{transaction['ID']}. {transaction['Date']}, {transaction['Name']} ,{transaction['Transaction Description']}- {transaction['Amount']}")
 
 
 

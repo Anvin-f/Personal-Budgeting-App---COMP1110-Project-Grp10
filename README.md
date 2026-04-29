@@ -1,121 +1,129 @@
-# Personal-Budgeting-App---COMP1110-Project-Grp10
+# Personal Budgeting App
 
-A personal budgeting app with a Tkinter GUI for managing transactions, tags, budgets, and spending analysis.
+A desktop personal budgeting application built with Tkinter. The app helps track transactions, manage tags and budgets, review spending trends, and optionally chat with an AI assistant using your financial data context.
 
----
+## Features
 
-## Key Features
+- Transaction management with CSV import support
+- Tag and category management (for example Bills, Needs, Wants, custom tags)
+- Monthly budget tracking with alert indicators
+- Analysis and summary pages for spending trends
+- Settings page for UI options and API key storage
+- Optional AI assistant panel that answers questions using your app data
 
-### Transaction Input & Management
-- Add, update, and delete transactions directly from the CLI.
-- Import and export transactions via CSV files.
-- Maintain a clean record of daily expenses.
+## Tech Stack
 
-### Data AnalysisS
-- Line graph to track daily expenses over time
-- Receive alerts when thresholds are exceeded
-- Stay on top of financial goals with automated checks
+- Python (Tkinter desktop GUI)
+- Matplotlib (embedded charts)
+- OpenAI Python SDK (used to call the configured chat endpoint)
+- Pytest (automated tests)
 
-### Category System
-- Organize expenses into Bills, Needs, Wants to monitor spending
-- Manage categories for easy visualisations and budget planning
-- Create custom tags for organisation
+## Requirements
 
-### Balance Adjustments & Irregular Expenses
-- Record peer-to-peer balance adjustments using tags (`Balance`, `Peer:<name>`)
-- Handle one-time irregular expenses using tags (`Irregular`, `One-time`) so they can be excluded from regular spending summaries
-- Take peer adjustments into account (for example shared rent and paybacks) through net balance tracking per person
+- Python 3.9+
+- A virtual environment is recommended
 
----
-
-## Installation
-
-### Prerequisites
-
-- **Python** 3.9 or higher
-
-### Code Setup
+Install dependencies:
 
 ```bash
-
-# Create a virtual environment
-python -m venv venv
-source venv/bin/activate   # On macOS/Linux
-venv\Scripts\activate      # On Windows
-
-# Install dependencies
 pip install -r requirements.txt
-
-# If error occured when pip installing the entire file
-# Try intalling the dependencies individually
-
 ```
 
-### Run The App
+Current dependency list is intentionally minimal and matches actual imports in this repository.
 
-```bash
+## Quick Start
+
+### Windows (PowerShell)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 python main.py
 ```
 
-`gui.py` remains available as a backward-compatible GUI entrypoint.
+### macOS/Linux
 
----
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python main.py
+```
+
+## Running Tests
+
+```bash
+pytest
+```
+
+Main test files are under `tests/` and cover transaction logic, adjustment logic, and CSV robustness scenarios.
+
+## AI Assistant Setup
+
+The AI assistant tab is optional.
+
+1. Open the app.
+2. Go to Settings.
+3. Enter your API key.
+
+The assistant builds context from your local transactions, tags, assignments, budgets, and selected profile fields.
+
+## Data Files
+
+The app stores data in CSV and JSON files under `data/`:
+
+- `transactions.csv`: transaction records
+- `tags.csv`: tag definitions
+- `assignment.csv`: transaction-to-tag mapping
+- `budget.csv`: budget configuration by tag and period
+- `settings.json`: UI and profile/API settings
 
 ## Project Structure
 
+```text
+.
+|-- main.py
+|-- requirements.txt
+|-- core/
+|   |-- transaction.py
+|   |-- tags.py
+|   |-- alerts.py
+|   |-- adjustments.py
+|   |-- settings.py
+|   `-- chatbot.py
+|-- gui_app/
+|   |-- app.py
+|   |-- base.py
+|   |-- constants.py
+|   |-- helpers.py
+|   `-- pages/
+|       |-- dashboard.py
+|       |-- transactions.py
+|       |-- tags.py
+|       |-- budget.py
+|       |-- analysis.py
+|       |-- summary.py
+|       |-- chatbot.py
+|       `-- settings.py
+|-- data/
+|   |-- transactions.csv
+|   |-- tags.csv
+|   |-- assignment.csv
+|   |-- budget.csv
+|   `-- settings.json
+`-- tests/
+	|-- conftest.py
+	|-- unit/
+	|   |-- test_transaction.py
+	|   `-- test_adjustments.py
+	|-- integration/
+	|   `-- test_import_csv.py
+	`-- helpers/
+		`-- case_generator.py
 ```
-Personal-Budgeting-App---COMP1110-Project-Grp10/
-│
-├── main.py                 # GUI entry point
-├── gui.py                  # Backward-compatible GUI wrapper
-├── gui_app/                # GUI package split by feature
-│   ├── app.py              # Main window and navigation
-│   ├── base.py             # Shared page base class
-│   ├── constants.py        # Shared theme and fonts
-│   ├── helpers.py          # Shared Tkinter helper functions
-│   └── pages/
-│       ├── dashboard.py    # Dashboard page
-│       ├── transactions.py # Transactions page and dialog
-│       ├── tags.py         # Tags page and dialog
-│       ├── budget.py       # Budgets page and dialog
-│       └── analysis.py     # Analysis page
-├── data/
-│   ├── assignment.csv      # record of assignment of tags to transactions
-│   ├── tags.csv            # tag information
-│   └── transactions.csv    # transaction history        
-│
-├── core/
-│   ├── transaction.py      # Transaction input & management
-│   ├── adjustments.py      # Peer-to-peer & irregular expenses handling
-│   ├── analysis.py         # Data analysis helpers
-│   ├── alerts.py           # Rule-based alerts
-│   └── utils.py            # Other functions
-│
-│
-├── tests/                  # Test programs
-│
-├── README.md               
-└── requirements.txt        # Record dependencies
-```
 
----
+## Notes
 
-## Database Structure
-All transaction history are stored in csv files
-
-### Database Schema
-
-| Table Name | Column Name | Data Type | Description |
-| :--- | :--- | :--- | :--- |
-| `transactions` | `ID` | `int` | Primary Key |
-| `transactions` | `Date` | `string` | Date of transaction |
-| `transactions` | `Name` | `string` | Transaction name |
-| `transactions` | `Description` | `string` | Addtional information of transaction |
-| `transactions` | `Amount` | `decimal` | Transaction amount |
-| `tags` | `TagID` | `int` | Primary Key |
-| `tags` | `Name` | `string` | Name of tag |
-| `tags` | `Description` | `string` | Tag Description |
-| `assignment` | `ID` | `int` | Foriegn key of transactions |
-| `assignment` | `TagID` | `int` | Foriegn key of tags |
-
----
+- Currency formatting in the app is currently oriented around HKD labels.
+- The GUI depends on Tkinter support in your Python installation.

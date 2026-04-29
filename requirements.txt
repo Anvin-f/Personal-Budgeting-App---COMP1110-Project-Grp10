@@ -1,9 +1,6 @@
 # Core dependencies
-pandas==2.2.1
 matplotlib==3.8.3
 openai>=1.0.0
-# CLI utilities
-click==8.1.7
 
 # Testing
 pytest==8.0.2

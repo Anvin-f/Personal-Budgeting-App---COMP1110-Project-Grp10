@@ -51,9 +51,3 @@ def write_settings(settings):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as file_handle:
         json.dump(normalized, file_handle, indent=2)
     return normalized
-
-
-def update_settings(**kwargs):
-    current = read_settings()
-    current.update(kwargs)
-    return write_settings(current)

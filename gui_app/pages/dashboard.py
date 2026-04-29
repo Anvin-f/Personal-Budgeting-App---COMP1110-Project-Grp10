@@ -276,7 +276,7 @@ class DashboardPage(Page):
                       "#ef4444", "#ec4899", "#06b6d4", "#f97316"]
             colors = colors[:len(labels)]
 
-            wedges, texts, autotexts = self.ax_pie.pie(
+            _, _, autotexts = self.ax_pie.pie(
                 amounts, labels=labels, autopct="%1.1f%%",
                 colors=colors, startangle=90,
                 textprops={"fontsize": 8, "color": TEXT},
