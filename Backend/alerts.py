@@ -1,8 +1,8 @@
-import csv
+﻿import csv
 import os
 from datetime import datetime, timedelta
 from collections import defaultdict
-import core.adjustments as adjustments
+import Backend.adjustments as adjustments
 
 # constants
 TRANSACTIONS_FILE = "data/transactions.csv"
@@ -11,7 +11,7 @@ ASSIGNMENT_FILE   = "data/assignment.csv"
 BUDGET_FILE       = "data/budget.csv"
 BUDGET_FIELDS = ["Tag_id", "Period", "Amount"]
 
-# ── CSV readers ─────────────────────────────────────────────────────────
+# â”€â”€ CSV readers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def read_transactions_csv():
     """Load all transactions from CSV into a list of dicts."""
     transactions = []
@@ -84,7 +84,7 @@ def write_budget_csv(budgetDic):
         writer.writeheader()
         writer.writerows(sorted_rows)
 
-# ── Shared helpers ──────────────────────────────────────────────────────
+# â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def _build_tag_map(assignments):
     """Map transaction_id -> first TagID for budget attribution."""
     tag_map = {}
@@ -139,7 +139,7 @@ def _parse_transaction(t):
     except (ValueError, KeyError):
         return None
 
-# ── Original alerts ─────────────────────────────────────────────────────
+# â”€â”€ Original alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def pace_alert():
     """Check if each budget category is on pace."""
     print("\n--- Pace Alerts (PocketGuard-inspired) ---")
@@ -331,7 +331,7 @@ def duplicate_alert():
     if alerts_fired == 0:
         print("[OK] No duplicate transactions detected.")
 
-# ── NEW ALERTS (for sidebar badge) ──────────────────────────────────────
+# â”€â”€ NEW ALERTS (for sidebar badge) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def historical_comparison_alert():
     """Compare current month spending to same period last month."""
     transactions = read_transactions_csv()
@@ -424,7 +424,7 @@ def consecutive_overpace_alert():
                 consecutive = 0
             if consecutive >= 3:
                 print(f"[Critical] '{tag_name}' has exceeded daily pace for 3 consecutive days "
-                      f"(around day {day-2}‑{day}). Consider slowing down.")
+                      f"(around day {day-2}â€‘{day}). Consider slowing down.")
                 break
 
 def peer_balance_reminder():
@@ -488,7 +488,7 @@ def budget_80_percent_alert():
                 print(f"[Warning] '{tag_name}' budget usage at {pct:.0f}% "
                       f"(HK${spent:.2f} / HK${budget_amount:.2f}).")
 
-# ── Unified alert runners ───────────────────────────────────────────────
+# â”€â”€ Unified alert runners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def check_all_alerts():
     """Run all original alerts (for Dashboard old-style table)."""
     print("\n========== Rule-Based Alerts ==========")

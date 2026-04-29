@@ -2,7 +2,7 @@
 
 import tkinter as tk
 
-import core.settings as app_settings
+import Backend.settings as app_settings
 
 from ..base import Page
 from ..constants import BG, BORDER, CARD, FONT, FONT_H, FONT_FAMILY, TEXT

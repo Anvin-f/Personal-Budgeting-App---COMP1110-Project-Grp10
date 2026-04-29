@@ -3,9 +3,9 @@ from collections import defaultdict
 from datetime import datetime
 from tkinter import messagebox, ttk
 
-import core.alerts as alerts
-import core.adjustments as adjustments
-import core.settings as app_settings
+import Backend.alerts as alerts
+import Backend.adjustments as adjustments
+import Backend.settings as app_settings
 
 from ..base import Page
 from ..constants import ACCENT, BG, BORDER, CARD, DANGER, FONT, FONT_H, FONT_SM, MUTED, SUCCESS, TEXT, FONT_FAMILY

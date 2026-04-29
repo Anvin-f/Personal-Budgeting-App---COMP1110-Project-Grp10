@@ -5,8 +5,8 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 
-import core.settings as app_settings
-import core.tags as tags
+import Backend.settings as app_settings
+import Backend.tags as tags
 import platform
 
 from .constants import ACCENT, BG, BORDER, CARD, FONT_H, TEXT, FONT_FAMILY

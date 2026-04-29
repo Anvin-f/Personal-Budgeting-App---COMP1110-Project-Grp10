@@ -5,8 +5,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from collections import defaultdict
 
-import core.alerts as alerts
-import core.transaction as transaction
+import Backend.alerts as alerts
+import Backend.transaction as transaction
 
 from ..base import Page
 from ..helpers import capture_output, card, page_header, safe_read_tags

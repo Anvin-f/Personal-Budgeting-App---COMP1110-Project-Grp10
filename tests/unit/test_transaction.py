@@ -1,8 +1,8 @@
-import csv
+﻿import csv
 
 import pytest
 
-from core import transaction
+from Backend import transaction
 
 
 def _write_rows(path, rows):
@@ -151,3 +151,4 @@ def test_add_transaction_from_csv_reuses_tag_case_insensitively(capsys, tmp_path
     assignments = transaction._load_assignments()
     assert len(tags) == 1
     assert len(assignments) == 2
+

@@ -1,8 +1,8 @@
 import threading
 import tkinter as tk
 
-import core.settings as app_settings
-from core.chatbot import build_financial_context, get_chat_response
+import Backend.settings as app_settings
+from Backend.chatbot import build_financial_context, get_chat_response
 
 from ..base import Page
 from ..constants import ACCENT, BG, BORDER, CARD, FONT, FONT_H, TEXT, FONT_FAMILY
@@ -244,3 +244,4 @@ class ChatbotPage(Page):
 
     def load(self):
         pass
+

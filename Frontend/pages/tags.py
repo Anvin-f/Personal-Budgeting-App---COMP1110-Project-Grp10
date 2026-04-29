@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-import core.settings as app_settings
-import core.tags as tags
+import Backend.settings as app_settings
+import Backend.tags as tags
 
 from ..base import Page
 from ..constants import BG, BORDER, DANGER, FONT, FONT_H, SUCCESS, TEXT, FONT_FAMILY

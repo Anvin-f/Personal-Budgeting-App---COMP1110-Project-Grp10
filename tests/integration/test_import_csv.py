@@ -1,8 +1,8 @@
-import csv
+﻿import csv
 
 import pytest
 
-from core import transaction
+from Backend import transaction
 from tests.helpers import case_generator as gen
 
 
@@ -107,3 +107,4 @@ def test_import_creates_consistent_assignment_foreign_keys(capsys, tmp_path, mon
     assert len(assignments) == 2
     assert {row["ID"] for row in assignments}.issubset(transaction_ids)
     assert {row["TagID"] for row in assignments}.issubset(tag_ids)
+

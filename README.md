@@ -1,4 +1,4 @@
-# Personal Budgeting App
+﻿# Personal Budgeting App
 
 A desktop personal budgeting application built with Tkinter. The app helps track transactions, manage tags and budgets, review spending trends, and optionally chat with an AI assistant using your financial data context.
 
@@ -85,14 +85,14 @@ The app stores data in CSV and JSON files under `data/`:
 .
 |-- main.py
 |-- requirements.txt
-|-- core/
+|-- Backend/
 |   |-- transaction.py
 |   |-- tags.py
 |   |-- alerts.py
 |   |-- adjustments.py
 |   |-- settings.py
 |   `-- chatbot.py
-|-- gui_app/
+|-- Frontend/
 |   |-- app.py
 |   |-- base.py
 |   |-- constants.py
@@ -127,3 +127,4 @@ The app stores data in CSV and JSON files under `data/`:
 
 - Currency formatting in the app is currently oriented around HKD labels.
 - The GUI depends on Tkinter support in your Python installation.
+

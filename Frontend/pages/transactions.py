@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-import core.adjustments as adjustments
-import core.settings as app_settings
-import core.transaction as transaction
+import Backend.adjustments as adjustments
+import Backend.settings as app_settings
+import Backend.transaction as transaction
 
 from ..base import Page
 from ..constants import ACCENT, BG, BORDER, DANGER, MUTED, FONT, FONT_H, SUCCESS, TEXT, FONT_FAMILY

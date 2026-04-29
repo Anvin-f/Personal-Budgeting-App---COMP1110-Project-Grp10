@@ -6,8 +6,8 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
-import core.alerts as alerts
-import core.adjustments as adjustments
+import Backend.alerts as alerts
+import Backend.adjustments as adjustments
 
 from ..base import Page
 from ..constants import BG, BORDER, CARD, FONT_SM, MUTED, TEXT, FONT_FAMILY

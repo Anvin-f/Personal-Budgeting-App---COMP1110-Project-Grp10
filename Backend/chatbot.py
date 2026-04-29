@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta
 from collections import defaultdict
 
-from core.alerts import (
+from Backend.alerts import (
     read_transactions_csv,
     read_tags_csv,
     read_assignments_csv,
@@ -10,7 +10,7 @@ from core.alerts import (
     _current_month_transactions,
     _sum_by_tag,
 )
-import core.settings as app_settings
+import Backend.settings as app_settings
 
 
 def build_financial_context():
@@ -157,3 +157,4 @@ def _safe_float(value):
         return float(value)
     except (TypeError, ValueError):
         return None
+

@@ -1,7 +1,7 @@
-import pytest
+﻿import pytest
 
-from core import adjustments
-from core import transaction
+from Backend import adjustments
+from Backend import transaction
 
 
 @pytest.mark.usefixtures("isolated_transaction_files")
@@ -130,3 +130,4 @@ def test_record_peer_adjustment_rejects_empty_peer_name():
 def test_adjusted_spending_total_rejects_inverted_date_range():
     with pytest.raises(ValueError, match="end_date"):
         adjustments.adjusted_spending_total(start_date="2026-04-10", end_date="2026-04-01")
+

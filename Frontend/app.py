@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-import core.settings as app_settings
+import Backend.settings as app_settings
 from .constants import (
     ACCENT, BG, BORDER, CARD, DARK_BG, DARK_BORDER, DARK_CARD,
     DARK_MUTED, DARK_SIDEBAR, DARK_TEXT, FONT, SIDEBAR,
