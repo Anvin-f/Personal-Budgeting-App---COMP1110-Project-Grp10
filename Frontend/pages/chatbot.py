@@ -53,16 +53,21 @@ class ChatbotPage(Page):
         # Frame inside canvas for messages
         self.messages_frame = tk.Frame(canvas, bg=CARD)
         canvas.create_window((0, 0), window=self.messages_frame, anchor="nw", width=canvas.winfo_width())
-        
+
         def on_frame_config(event):
             canvas.configure(scrollregion=canvas.bbox("all"))
-        
+
         def on_canvas_config(event):
             canvas.itemconfig(canvas.find_withtag("all")[0] if canvas.find_withtag("all") else None, width=event.width)
-        
+
         self.messages_frame.bind("<Configure>", on_frame_config)
         canvas.bind("<Configure>", on_canvas_config)
-        
+
+        # Mouse wheel bindings on the canvas itself (works when mouse is over canvas background)
+        canvas.bind("<MouseWheel>", self._on_mousewheel)
+        canvas.bind("<Button-4>", self._on_mousewheel)
+        canvas.bind("<Button-5>", self._on_mousewheel)
+
         self.chat_display = canvas
 
         # Input area
@@ -104,6 +109,21 @@ class ChatbotPage(Page):
         self._conversation = []
         self._show_welcome()
 
+    def _on_mousewheel(self, event):
+        """Handle mouse wheel scrolling on any bound widget."""
+        if event.num == 4:
+            self.chat_display.yview_scroll(-1, "units")
+        elif event.num == 5:
+            self.chat_display.yview_scroll(1, "units")
+        else:
+            self.chat_display.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _bind_scroll_to_widget(self, widget):
+        """Bind mouse wheel events to a widget so scrolling works when hovering over content."""
+        widget.bind("<MouseWheel>", self._on_mousewheel)
+        widget.bind("<Button-4>", self._on_mousewheel)
+        widget.bind("<Button-5>", self._on_mousewheel)
+
     def _show_welcome(self):
         self._add_message(
             "Hello! I'm your personal finance assistant. Ask me anything about your "
@@ -122,7 +142,8 @@ class ChatbotPage(Page):
         """Add a message bubble to the conversation."""
         msg_bubble = tk.Frame(self.messages_frame, bg=CARD)
         msg_bubble.pack(fill="x", padx=4, pady=4)
-        
+        self._bind_scroll_to_widget(msg_bubble)
+
         # Determine colors based on message type
         if is_hint:
             bg_color = "#f0fdf4"
@@ -137,31 +158,35 @@ class ChatbotPage(Page):
             bg_color = "#f3f4f6"
             text_color = TEXT
             label_color = "#10b981"
-        
+
         # Create bubble container
         bubble = tk.Frame(msg_bubble, bg=bg_color, relief="flat", bd=0)
         if is_user:
             bubble.pack(anchor="e", padx=(40, 4))
         else:
             bubble.pack(anchor="w", padx=(4, 40))
-        
+        self._bind_scroll_to_widget(bubble)
+
         # Message content
         content = tk.Frame(bubble, bg=bg_color)
         content.pack(fill="both", expand=True, padx=12, pady=10)
-        
+        self._bind_scroll_to_widget(content)
+
         # Sender label
         sender = "You" if is_user else ("AI Assistant" if not is_hint else "💡 Hint")
-        tk.Label(
+        sender_label = tk.Label(
             content,
             text=sender,
             bg=bg_color,
             fg=label_color,
             font=(FONT_FAMILY, 9, "bold"),
             anchor="w",
-        ).pack(fill="x")
-        
+        )
+        sender_label.pack(fill="x")
+        self._bind_scroll_to_widget(sender_label)
+
         # Message text
-        tk.Label(
+        msg_label = tk.Label(
             content,
             text=text,
             bg=bg_color,
@@ -170,8 +195,10 @@ class ChatbotPage(Page):
             justify="left",
             wraplength=500,
             anchor="w",
-        ).pack(fill="both", expand=True, padx=(0, 0), pady=(4, 0))
-        
+        )
+        msg_label.pack(fill="both", expand=True, padx=(0, 0), pady=(4, 0))
+        self._bind_scroll_to_widget(msg_label)
+
         # Scroll to bottom
         self.chat_display.yview_moveto(1.0)
 
@@ -244,4 +271,3 @@ class ChatbotPage(Page):
 
     def load(self):
         pass
-

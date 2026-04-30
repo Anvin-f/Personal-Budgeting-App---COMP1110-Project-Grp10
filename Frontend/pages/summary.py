@@ -108,16 +108,41 @@ class SummaryPage(Page):
         self.content_frame = tk.Frame(canvas, bg=CARD)
         self.canvas_window = canvas.create_window(0, 0, window=self.content_frame, anchor="nw")
         canvas.bind("<Configure>", self._on_canvas_configure)
+        self.content_frame.bind("<Configure>", self._on_content_configure)
+
+        # Mouse wheel bindings on the canvas itself (works when mouse is over canvas background)
+        canvas.bind("<MouseWheel>", self._on_mousewheel)
+        canvas.bind("<Button-4>", self._on_mousewheel)
+        canvas.bind("<Button-5>", self._on_mousewheel)
 
         self.canvas = canvas
         self._add_placeholder()
         self._generating = False
+
+    def _on_mousewheel(self, event):
+        """Handle mouse wheel scrolling on any bound widget."""
+        if event.num == 4:
+            self.canvas.yview_scroll(-1, "units")
+        elif event.num == 5:
+            self.canvas.yview_scroll(1, "units")
+        else:
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _bind_scroll_to_widget(self, widget):
+        """Bind mouse wheel events to a widget so scrolling works when hovering over content."""
+        widget.bind("<MouseWheel>", self._on_mousewheel)
+        widget.bind("<Button-4>", self._on_mousewheel)
+        widget.bind("<Button-5>", self._on_mousewheel)
 
     def _on_canvas_configure(self, event):
         """Update the scroll region when canvas is resized."""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         # Update canvas window width to match canvas width
         self.canvas.itemconfig(self.canvas_window, width=event.width)
+
+    def _on_content_configure(self, event):
+        """Update the scroll region when content frame changes size."""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _add_placeholder(self):
         """Add placeholder text."""
@@ -131,6 +156,7 @@ class SummaryPage(Page):
             justify="center",
         )
         placeholder.pack(pady=40)
+        self._bind_scroll_to_widget(placeholder)
 
     def _reset_prompt(self):
         """Reset prompt to default."""
@@ -146,6 +172,7 @@ class SummaryPage(Page):
         """Add a section with title and content."""
         section = tk.Frame(self.content_frame, bg=CARD)
         section.pack(fill="x", pady=(0, 16))
+        self._bind_scroll_to_widget(section)
 
         # Section title
         title_label = tk.Label(
@@ -156,6 +183,7 @@ class SummaryPage(Page):
             font=(FONT_FAMILY, 11, "bold"),
         )
         title_label.pack(anchor="w", pady=(0, 8))
+        self._bind_scroll_to_widget(title_label)
 
         # Section content
         content_label = tk.Label(
@@ -168,9 +196,12 @@ class SummaryPage(Page):
             wraplength=600,
         )
         content_label.pack(anchor="w", fill="x")
+        self._bind_scroll_to_widget(content_label)
 
         # Divider
-        tk.Frame(section, bg=BORDER, height=1).pack(fill="x", pady=(8, 0))
+        divider = tk.Frame(section, bg=BORDER, height=1)
+        divider.pack(fill="x", pady=(8, 0))
+        self._bind_scroll_to_widget(divider)
 
     def _generate_summary(self):
         if self._generating:
@@ -184,6 +215,7 @@ class SummaryPage(Page):
             bg=CARD, fg="#9ca3af", font=(FONT_FAMILY, 11),
         )
         loading.pack(pady=40)
+        self._bind_scroll_to_widget(loading)
         threading.Thread(target=self._fetch_summary, daemon=True).start()
 
     def _fetch_summary(self):
@@ -230,9 +262,9 @@ class SummaryPage(Page):
             self._add_section("Financial Summary", summary_text)
 
         self.generate_btn.configure(state="normal")
+        self.canvas.update_idletasks()
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         self._generating = False
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _parse_summary(self, text):
         """Parse summary text into sections."""
@@ -279,7 +311,7 @@ class SummaryPage(Page):
             justify="center",
         )
         error_label.pack(pady=40)
+        self._bind_scroll_to_widget(error_label)
 
         self.generate_btn.configure(state="normal")
         self._generating = False
-
