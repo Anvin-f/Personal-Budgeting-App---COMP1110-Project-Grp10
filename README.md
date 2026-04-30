@@ -20,7 +20,7 @@ A desktop personal budgeting application built with Tkinter. The app helps track
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.10+
 - A virtual environment is recommended
 
 Install dependencies:
