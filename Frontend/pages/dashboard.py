@@ -206,11 +206,13 @@ class DashboardPage(Page):
             self.alert_tree.tag_configure("alert", background="#7f1d1d", foreground="#fee2e2")
             self.alert_tree.tag_configure("ok", background="#064e3b", foreground="#d1fae5")
             self.alert_tree.tag_configure("info", background="#1e293b", foreground="#cbd5e1")
+            self.alert_tree.tag_configure("critical", background="#7f1d1d", foreground="#fee2e2")
         else:
             self.alert_tree.tag_configure("warning", background="#fff7ed", foreground="#9a3412")
             self.alert_tree.tag_configure("alert", background="#fef2f2", foreground="#991b1b")
             self.alert_tree.tag_configure("ok", background="#ecfdf5", foreground="#065f46")
             self.alert_tree.tag_configure("info", background="#f8fafc", foreground="#334155")
+            self.alert_tree.tag_configure("critical", background="#fef2f2", foreground="#991b1b")
 
     def _render_alerts(self, output):
         self._update_alert_tags()
@@ -220,7 +222,7 @@ class DashboardPage(Page):
 
         self.alert_tree.delete(*self.alert_tree.get_children())
 
-        totals = {"alert": 0, "warning": 0, "ok": 0, "info": 0}
+        totals = {"alert": 0, "warning": 0, "ok": 0, "info": 0, "critical": 0}
         for severity, message in lines:
             normalized = severity if severity in totals else "info"
             totals[normalized] += 1
@@ -228,7 +230,7 @@ class DashboardPage(Page):
 
         total_count = sum(totals.values())
         self._total_chip.config(text=str(total_count))
-        self._warning_chip.config(text=str(totals["warning"] + totals["alert"]))
+        self._warning_chip.config(text=str(totals["warning"] + totals["critical"]))
         self._ok_chip.config(text=str(totals["ok"]))
         self._info_chip.config(text=str(totals["info"]))
 
@@ -265,29 +267,39 @@ class DashboardPage(Page):
         self.canvas_trend.draw()
 
     def _draw_category_pie(self, by_category):
-        """Draw category breakdown as pie chart."""
+        """Draw category breakdown as pie chart.
+        Use legend to avoid label overlap, show percent only for slices >= 5%."""
         self.ax_pie.clear()
         self.ax_pie.set_facecolor(CARD)
-
         if by_category:
-            labels = list(by_category.keys())
-            amounts = list(by_category.values())
+            # Sort categories by amount descending, keep top 7 + "Other"
+            sorted_cats = sorted(by_category.items(), key=lambda x: x[1], reverse=True)
+            if len(sorted_cats) > 7:
+                top = sorted_cats[:7]
+                other_amount = sum(a for _, a in sorted_cats[7:])
+                if other_amount > 0:
+                    pie_items = top + [("Other", other_amount)]
+                else:
+                    pie_items = top
+            else:
+                pie_items = sorted_cats
+            labels = [l for l, _ in pie_items]
+            amounts = [a for _, a in pie_items]
             colors = ["#3b82f6", "#8b5cf6", "#f59e0b", "#10b981",
-                      "#ef4444", "#ec4899", "#06b6d4", "#f97316"]
+                    "#ef4444", "#ec4899", "#06b6d4", "#f97316"]
             colors = colors[:len(labels)]
-
-            _, _, autotexts = self.ax_pie.pie(
-                amounts, labels=labels, autopct="%1.1f%%",
+            wedges, texts, autotexts = self.ax_pie.pie(
+                amounts, labels=None,
+                autopct=lambda pct: f"{pct:.0f}%" if pct >= 5 else "",
                 colors=colors, startangle=90,
                 textprops={"fontsize": 8, "color": TEXT},
             )
-            for autotext in autotexts:
-                autotext.set_color("white")
-                autotext.set_weight("bold")
+            # Place legend to the right to keep chart clean
+            self.ax_pie.legend(wedges, labels, title="Categories", loc="center left",
+                            bbox_to_anchor=(1, 0.5), fontsize=8)
         else:
             self.ax_pie.text(0.5, 0.5, "No data", ha="center", va="center",
-                             color=MUTED, transform=self.ax_pie.transAxes)
-
+                            color=MUTED, transform=self.ax_pie.transAxes)
         self.fig_pie.tight_layout()
         self.canvas_pie.draw()
 
@@ -382,8 +394,10 @@ class DashboardPage(Page):
 
         self._draw_category_pie(by_category)
 
-        output = capture_output(alerts.check_all_alerts)
-        self._render_alerts(output)
+        full_output = ""
+        full_output += capture_output(alerts.check_all_alerts)
+        full_output += "\n" + capture_output(alerts.check_new_alerts)
+        self._render_alerts(full_output)
 
         # ── Capture new alerts for sidebar badge ─────────────────────────
         new_output = capture_output(alerts.check_new_alerts)

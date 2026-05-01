@@ -9,7 +9,7 @@ import Backend.settings as app_settings
 import Backend.transaction as transaction
 
 from ..base import Page
-from ..constants import ACCENT, BG, BORDER, DANGER, MUTED, FONT, FONT_H, SUCCESS, TEXT, FONT_FAMILY
+from ..constants import ACCENT, BG, BORDER, DANGER, MUTED, FONT, FONT_H, SUCCESS, TEXT, FONT_FAMILY, CARD
 from ..helpers import button, card, repaint_tree, safe_float, safe_read_tags, zebra, bind_tree_sort
 
 
@@ -544,6 +544,16 @@ class TransactionsPage(Page):
                 if not required.issubset(columns):
                     return f"[Error] Missing columns: {required - columns}"
                 has_tag_columns = "Tag_type" in columns and "Tag_name" in columns
+
+                # Build a lookup from existing tag_name -> tag_type to fill missing types
+                existing_tags = transaction._load_tags()
+                name_to_type = {}
+                for t in existing_tags:
+                    name = (t.get("Tag_name") or "").strip().lower()
+                    ttype = (t.get("Tag_type") or "").strip()
+                    if name and name not in name_to_type:
+                        name_to_type[name] = ttype
+
                 for row in reader:
                     date_value = row.get("Date", "").strip()
                     name = row.get("Name", "").strip()
@@ -551,6 +561,13 @@ class TransactionsPage(Page):
                     amount = row.get("Amount", "").strip()
                     tag_type = row.get("Tag_type", "").strip() if has_tag_columns else ""
                     tag_name = row.get("Tag_name", "").strip() if has_tag_columns else ""
+
+                    # Fill missing tag_type from existing tags if tag_name is known
+                    if not tag_type and tag_name:
+                        lower_name = tag_name.lower()
+                        if lower_name in name_to_type:
+                            tag_type = name_to_type[lower_name]
+
                     if not transaction._validate_date(date_value):
                         continue
                     if not name:
@@ -703,26 +720,49 @@ class AddPeerBalanceDialog(tk.Toplevel):
         super().__init__(parent)
         self.on_save = on_save
         self.title("Record Peer Balance")
-        self.geometry("460x560")
+        self.geometry("460x580")  # slightly taller to accommodate buttons
         self.configure(bg=BG)
-        self.resizable(False, False)
+        self.resizable(True, True)  # allow resize so buttons are reachable
+        self.minsize(400, 500)
         self.grab_set()
 
         self._recent_entries = adjustments.list_recent_peer_entries(limit=20)
 
-        tk.Label(self, text="Peer Balance Entry", bg=BG, fg=TEXT, font=FONT_H).pack(
+        # ── scrollable area for form content ──────────────────────────────
+        canvas = tk.Canvas(self, bg=BG, highlightthickness=0, bd=0)
+        scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Scroll frame that will hold all form widgets
+        scroll_frame = tk.Frame(canvas, bg=BG)
+        scroll_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(
+            canvas.find_withtag("all")[0] if canvas.find_withtag("all") else None,
+            width=e.width))
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # ── header (inside scroll_frame) ──────────────────────────────────
+        tk.Label(scroll_frame, text="Peer Balance Entry", bg=BG, fg=TEXT, font=FONT_H).pack(
             anchor="w",
             padx=28,
             pady=(20, 4),
         )
-        tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=28, pady=(0, 12))
+        tk.Frame(scroll_frame, bg=BORDER, height=1).pack(fill="x", padx=28, pady=(0, 12))
 
-        quick_row = tk.Frame(self, bg=BG)
+        # quick action row
+        quick_row = tk.Frame(scroll_frame, bg=BG)
         quick_row.pack(fill="x", padx=28, pady=(0, 8))
         button(quick_row, "Duplicate Last", self._duplicate_last_entry, "#8b5cf6").pack(side="left", padx=(0, 6))
         button(quick_row, "Suggest Opposite", self._apply_opposite_suggestion, "#374151").pack(side="left")
 
-        form = tk.Frame(self, bg=BG)
+        # main form
+        form = tk.Frame(scroll_frame, bg=BG)
         form.pack(padx=28, fill="x")
 
         self.date_var = tk.StringVar(value=datetime.today().strftime("%Y-%m-%d"))
@@ -752,7 +792,9 @@ class AddPeerBalanceDialog(tk.Toplevel):
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         peer_options = self._build_peer_options()
-        self.peer_combo = ttk.Combobox(form, textvariable=self.peer_var, values=peer_options, font=FONT)
+        style = ttk.Style()
+        style.configure("Peer.TCombobox", foreground=TEXT, fieldbackground=CARD)
+        self.peer_combo = ttk.Combobox(form, textvariable=self.peer_var, values=peer_options, font=FONT, style="Peer.TCombobox")
         self.peer_combo.pack(fill="x", ipady=5)
         self.peer_combo.bind("<<ComboboxSelected>>", self._on_peer_change)
         self.peer_combo.bind("<FocusOut>", self._on_peer_change)
@@ -840,6 +882,7 @@ class AddPeerBalanceDialog(tk.Toplevel):
             fill="x", ipady=5
         )
 
+        # hint and suggestion labels
         hint = tk.Label(
             form,
             text="This creates a transaction and links the correct Balance + Peer tag automatically.",
@@ -864,8 +907,9 @@ class AddPeerBalanceDialog(tk.Toplevel):
             wraplength=360,
         ).pack(fill="x", pady=(6, 0))
 
+        # ── save / cancel buttons (always visible at bottom) ──────────────
         button_row = tk.Frame(self, bg=BG)
-        button_row.pack(pady=20)
+        button_row.pack(side="bottom", fill="x", pady=(10, 20))
         button(button_row, "Save Entry", self._save, SUCCESS).pack(side="left", padx=6)
         button(button_row, "Cancel", self.destroy, DANGER).pack(side="left", padx=6)
 

@@ -634,43 +634,63 @@ class AnalysisPage(Page):
         self.ax1 = self.fig.add_subplot(211)
         self.ax2 = self.fig.add_subplot(212)
         self.fig.patch.set_facecolor(CARD)
-
         amounts = [by_month.get(i, 0.0) for i in range(12)]
         has_data = any(a > 0 for a in amounts)
-
         if self._chart_type == "pie":
             # ── Pie charts ──────────────────────────────────────────────────
             for axis in (self.ax1, self.ax2):
                 axis.set_facecolor(CARD)
-
-            # ax1: monthly spending pie
+            # ax1: monthly spending pie – top months, others merged
             nonzero = [(month_names[i], amounts[i]) for i in range(12) if amounts[i] > 0]
             if nonzero:
-                labels, vals = zip(*nonzero)
-                self.ax1.pie(
-                    vals, labels=labels, autopct="%1.0f%%",
-                    colors=self._PIE_COLORS[:len(vals)],
+                if len(nonzero) > 7:
+                    sorted_nonzero = sorted(nonzero, key=lambda x: x[1], reverse=True)
+                    top = sorted_nonzero[:7]
+                    other_amount = sum(a for _, a in sorted_nonzero[7:])
+                    if other_amount > 0:
+                        pie_items = top + [("Other", other_amount)]
+                    else:
+                        pie_items = top
+                else:
+                    pie_items = nonzero
+                labels, vals = zip(*pie_items)
+                wedges, texts, autotexts = self.ax1.pie(
+                    vals, labels=None,
+                    autopct=lambda pct: f"{pct:.0f}%" if pct >= 5 else "",
+                    colors=self._PIE_COLORS[:len(labels)],
                     startangle=90, textprops={"fontsize": 8, "color": TEXT},
                 )
+                self.ax1.legend(wedges, labels, title="Months", loc="center left",
+                                bbox_to_anchor=(1, 0.5), fontsize=8)
             else:
                 self.ax1.text(0.5, 0.5, "No spending this year",
-                              ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
+                            ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
             self.ax1.set_title(f"Monthly Spending - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
-
-            # ax2: top categories pie
+            # ax2: top categories pie – top 7
             if by_category_year:
-                sorted_cats = sorted(by_category_year.items(), key=lambda x: x[1], reverse=True)[:8]
-                cat_labels, cat_amounts = zip(*sorted_cats)
-                self.ax2.pie(
-                    cat_amounts, labels=cat_labels, autopct="%1.0f%%",
+                sorted_cats = sorted(by_category_year.items(), key=lambda x: x[1], reverse=True)
+                if len(sorted_cats) > 7:
+                    top = sorted_cats[:7]
+                    other_amount = sum(a for _, a in sorted_cats[7:])
+                    if other_amount > 0:
+                        pie_items = top + [("Other", other_amount)]
+                    else:
+                        pie_items = top
+                else:
+                    pie_items = sorted_cats
+                cat_labels, cat_amounts = zip(*pie_items)
+                wedges, texts, autotexts = self.ax2.pie(
+                    cat_amounts, labels=None,
+                    autopct=lambda pct: f"{pct:.0f}%" if pct >= 5 else "",
                     colors=self._PIE_COLORS[:len(cat_amounts)],
                     startangle=90, textprops={"fontsize": 8, "color": TEXT},
                 )
+                self.ax2.legend(wedges, cat_labels, title="Categories", loc="center left",
+                                bbox_to_anchor=(1, 0.5), fontsize=8)
             else:
                 self.ax2.text(0.5, 0.5, "No regular spending this year",
-                              ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
+                            ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
             self.ax2.set_title(f"Top Categories - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
-
         else:
             # ── Bar charts ──────────────────────────────────────────────────
             for axis in (self.ax1, self.ax2):
@@ -679,7 +699,6 @@ class AnalysisPage(Page):
                 axis.spines["right"].set_visible(False)
                 axis.spines["left"].set_color(BORDER)
                 axis.spines["bottom"].set_color(BORDER)
-
             bars = self.ax1.bar(month_names, amounts, color="#3b82f6", edgecolor="none", zorder=2, width=0.6)
             self.ax1.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
             if has_data:
@@ -696,7 +715,6 @@ class AnalysisPage(Page):
             self.ax1.set_ylabel("HK$", fontsize=9, color=MUTED)
             self.ax1.tick_params(axis="x", rotation=0, labelsize=8, colors=TEXT)
             self.ax1.tick_params(axis="y", labelsize=8, colors=MUTED)
-
             if by_category_year:
                 sorted_cats = sorted(by_category_year.items(), key=lambda x: x[1], reverse=True)[:6]
                 cat_labels = [c for c, _ in sorted_cats]
@@ -705,12 +723,11 @@ class AnalysisPage(Page):
                 self.ax2.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
             else:
                 self.ax2.text(0.5, 0.5, "No regular spending this year",
-                              ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
+                            ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
             self.ax2.set_title(f"Top Categories - {year}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
             self.ax2.set_ylabel("HK$", fontsize=9, color=MUTED)
             self.ax2.tick_params(axis="x", rotation=30, labelsize=8, colors=TEXT)
             self.ax2.tick_params(axis="y", labelsize=8, colors=MUTED)
-
         self.fig.tight_layout(pad=2.5)
         self.canvas.draw()
 
@@ -787,34 +804,60 @@ class AnalysisPage(Page):
             for axis in (self.ax1, self.ax2):
                 axis.set_facecolor(CARD)
 
-            # ax1: categories pie
+            # ax1: categories pie – top 7, rest into "Other"
             if by_category_month:
-                sorted_categories = sorted(by_category_month.items(), key=lambda item: item[1], reverse=True)
-                labels = [l for l, _ in sorted_categories]
-                amounts = [a for _, a in sorted_categories]
-                self.ax1.pie(
-                    amounts, labels=labels, autopct="%1.0f%%",
+                sorted_cats = sorted(by_category_month.items(), key=lambda x: x[1], reverse=True)
+                if len(sorted_cats) > 7:
+                    top = sorted_cats[:7]
+                    other_amount = sum(a for _, a in sorted_cats[7:])
+                    if other_amount > 0:
+                        pie_items = top + [("Other", other_amount)]
+                    else:
+                        pie_items = top
+                else:
+                    pie_items = sorted_cats
+                labels = [l for l, _ in pie_items]
+                amounts = [a for _, a in pie_items]
+                # Use legend instead of inline labels to avoid overlapping,
+                # and only show percentage text for slices >= 5%.
+                wedges, texts, autotexts = self.ax1.pie(
+                    amounts, labels=None,
+                    autopct=lambda pct: f"{pct:.0f}%" if pct >= 5 else "",
                     colors=self._PIE_COLORS[:len(amounts)],
                     startangle=90, textprops={"fontsize": 8, "color": TEXT},
                 )
+                self.ax1.legend(wedges, labels, title="Categories", loc="center left",
+                                bbox_to_anchor=(1, 0.5), fontsize=8)
             else:
                 self.ax1.text(0.5, 0.5, "No regular spending in this month",
-                              ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
+                            ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
             self.ax1.set_title(f"Spending by Category - {month_title}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
 
-            # ax2: daily spending pie
+            # ax2: daily spending pie – top 7 days, rest → Other
             if per_day:
-                sorted_days = sorted(per_day.items())
-                labels = [l for l, _ in sorted_days]
-                amounts = [a for _, a in sorted_days]
-                self.ax2.pie(
-                    amounts, labels=labels, autopct="%1.0f%%",
+                sorted_days = sorted(per_day.items(), key=lambda x: x[1], reverse=True)
+                if len(sorted_days) > 7:
+                    top = sorted_days[:7]
+                    other_amount = sum(a for _, a in sorted_days[7:])
+                    if other_amount > 0:
+                        pie_items = top + [("Other", other_amount)]
+                    else:
+                        pie_items = top
+                else:
+                    pie_items = sorted_days
+                labels = [l for l, _ in pie_items]
+                amounts = [a for _, a in pie_items]
+                wedges, texts, autotexts = self.ax2.pie(
+                    amounts, labels=None,
+                    autopct=lambda pct: f"{pct:.0f}%" if pct >= 5 else "",
                     colors=self._PIE_COLORS[:len(amounts)],
                     startangle=90, textprops={"fontsize": 8, "color": TEXT},
                 )
+                self.ax2.legend(wedges, labels, title="Days", loc="center left",
+                                bbox_to_anchor=(1, 0.5), fontsize=8)
             else:
                 self.ax2.text(0.5, 0.5, "No regular spending days in this month",
-                              ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
+                            ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
             self.ax2.set_title(f"Daily Spending - {month_title}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
 
         else:
@@ -842,7 +885,7 @@ class AnalysisPage(Page):
                     )
             else:
                 self.ax1.text(0.5, 0.5, "No regular spending in this month",
-                              ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
+                            ha="center", va="center", transform=self.ax1.transAxes, color=MUTED, fontsize=10)
             self.ax1.set_title(f"Spending by Category - {month_title}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
             self.ax1.set_ylabel("HK$", fontsize=9, color=MUTED)
             self.ax1.tick_params(axis="x", rotation=30, labelsize=8, colors=TEXT)
@@ -856,7 +899,7 @@ class AnalysisPage(Page):
                 self.ax2.grid(axis="y", linestyle="--", alpha=0.35, zorder=1)
             else:
                 self.ax2.text(0.5, 0.5, "No regular spending days in this month",
-                              ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
+                            ha="center", va="center", transform=self.ax2.transAxes, color=MUTED, fontsize=10)
             self.ax2.set_title(f"Daily Spending - {month_title}", fontsize=10, pad=8, color=TEXT, fontweight="bold")
             self.ax2.set_ylabel("HK$", fontsize=9, color=MUTED)
             self.ax2.tick_params(axis="x", rotation=45, labelsize=7, colors=TEXT)
