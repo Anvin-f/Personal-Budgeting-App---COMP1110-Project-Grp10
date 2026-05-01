@@ -11,7 +11,7 @@ ASSIGNMENT_FILE   = "data/assignment.csv"
 BUDGET_FILE       = "data/budget.csv"
 BUDGET_FIELDS = ["Tag_id", "Period", "Amount"]
 
-# â”€â”€ CSV readers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+#CSV readers
 def read_transactions_csv():
     """Load all transactions from CSV into a list of dicts."""
     transactions = []
@@ -139,7 +139,7 @@ def _parse_transaction(t):
     except (ValueError, KeyError):
         return None
 
-# â”€â”€ Original alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Original alerts 
 def pace_alert():
     """Check if each budget category is on pace."""
     print("\n--- Pace Alerts (PocketGuard-inspired) ---")
@@ -489,7 +489,7 @@ def budget_80_percent_alert():
                 print(f"[Warning] '{tag_name}' budget usage at {pct:.0f}% "
                       f"(HK${spent:.2f} / HK${budget_amount:.2f}).")
 
-# â”€â”€ Unified alert runners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Unified alert runners 
 def check_all_alerts():
     """Run all original alerts (for Dashboard old-style table)."""
     print("\n========== Rule-Based Alerts ==========")
