@@ -1,1 +1,18 @@
 ID,Date,Name,Transaction Description,Amount
+1,2026-03-01,Netflix,Monthly subscription,98.00
+2,2026-03-05,Spotify,Monthly subscription,98.00
+3,2026-03-15,Gym Membership,Monthly gym fee,350.00
+4,2026-03-20,Supermarket,Groceries,250.00
+5,2026-04-01,Netflix,Monthly subscription,98.00
+6,2026-04-05,Spotify,Monthly subscription,98.00
+7,2026-04-10,Balance Out - Lisa,Concert ticket advance,800.00
+8,2026-04-15,Gym Membership,Monthly gym fee,350.00
+9,2026-04-20,Supermarket,Groceries,250.00
+10,2026-05-01,Netflix,Monthly subscription,98.00
+11,2026-05-01,Balance Out - Tom,Shared dinner,300.00
+12,2026-05-05,Spotify,Monthly subscription,128.00
+13,2026-05-10,Balance In - Tom,Partial repayment,200.00
+14,2026-05-15,Gym Membership,Monthly gym fee,350.00
+15,2026-05-18,MTR,Commute,50.00
+16,2026-05-18,MTR,Commute,50.00
+17,2026-05-20,Supermarket,Quick groceries,250.00

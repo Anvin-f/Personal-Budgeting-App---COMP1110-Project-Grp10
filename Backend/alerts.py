@@ -484,7 +484,7 @@ def budget_80_percent_alert():
         spent = spent_by_tag.get(tag_id, 0.0)
         if budget_amount > 0:
             pct = (spent / budget_amount) * 100
-            if 80 <= pct < 100:
+            if pct >= 80:
                 tag_name = tags.get(tag_id, {}).get("Tag_name", f"Tag {tag_id}")
                 print(f"[Warning] '{tag_name}' budget usage at {pct:.0f}% "
                       f"(HK${spent:.2f} / HK${budget_amount:.2f}).")
