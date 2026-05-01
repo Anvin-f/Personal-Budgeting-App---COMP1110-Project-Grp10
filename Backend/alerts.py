@@ -221,7 +221,8 @@ def in_my_pocket_alert():
             print("[Warning] Daily safe amount is less than half your normal pace. Slow down.")
 
 def _detect_subscriptions(transactions):
-    """Group recurring charges by (name, amount) and frequency."""
+    """Group recurring charges by (name, amount) and frequency.
+       Lowered threshold: 2 occurrences minimum, 60% interval match."""
     groups = defaultdict(list)
     for t in transactions:
         parsed = _parse_transaction(t)
@@ -231,7 +232,7 @@ def _detect_subscriptions(transactions):
         groups[(name, round(amount, 2))].append(tdate)
     subscriptions = []
     for (name, amount), dates in groups.items():
-        if len(dates) < 3:
+        if len(dates) < 2:
             continue
         dates.sort()
         gaps = [(dates[i] - dates[i-1]).days for i in range(1, len(dates))]
@@ -239,7 +240,7 @@ def _detect_subscriptions(transactions):
         weekly  = sum(1 for g in gaps if 6  <= g <= 8)
         yearly  = sum(1 for g in gaps if 360 <= g <= 370)
         frequency = None
-        threshold = len(gaps) * 0.7
+        threshold = len(gaps) * 0.6
         if   monthly >= threshold: frequency = "monthly"
         elif weekly  >= threshold: frequency = "weekly"
         elif yearly  >= threshold: frequency = "yearly"

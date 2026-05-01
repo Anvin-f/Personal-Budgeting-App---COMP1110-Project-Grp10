@@ -206,11 +206,13 @@ class DashboardPage(Page):
             self.alert_tree.tag_configure("alert", background="#7f1d1d", foreground="#fee2e2")
             self.alert_tree.tag_configure("ok", background="#064e3b", foreground="#d1fae5")
             self.alert_tree.tag_configure("info", background="#1e293b", foreground="#cbd5e1")
+            self.alert_tree.tag_configure("critical", background="#7f1d1d", foreground="#fee2e2")
         else:
             self.alert_tree.tag_configure("warning", background="#fff7ed", foreground="#9a3412")
             self.alert_tree.tag_configure("alert", background="#fef2f2", foreground="#991b1b")
             self.alert_tree.tag_configure("ok", background="#ecfdf5", foreground="#065f46")
             self.alert_tree.tag_configure("info", background="#f8fafc", foreground="#334155")
+            self.alert_tree.tag_configure("critical", background="#fef2f2", foreground="#991b1b")
 
     def _render_alerts(self, output):
         self._update_alert_tags()
@@ -220,7 +222,7 @@ class DashboardPage(Page):
 
         self.alert_tree.delete(*self.alert_tree.get_children())
 
-        totals = {"alert": 0, "warning": 0, "ok": 0, "info": 0}
+        totals = {"alert": 0, "warning": 0, "ok": 0, "info": 0, "critical": 0}
         for severity, message in lines:
             normalized = severity if severity in totals else "info"
             totals[normalized] += 1
@@ -228,7 +230,7 @@ class DashboardPage(Page):
 
         total_count = sum(totals.values())
         self._total_chip.config(text=str(total_count))
-        self._warning_chip.config(text=str(totals["warning"] + totals["alert"]))
+        self._warning_chip.config(text=str(totals["warning"] + totals["critical"]))
         self._ok_chip.config(text=str(totals["ok"]))
         self._info_chip.config(text=str(totals["info"]))
 
@@ -392,8 +394,10 @@ class DashboardPage(Page):
 
         self._draw_category_pie(by_category)
 
-        output = capture_output(alerts.check_all_alerts)
-        self._render_alerts(output)
+        full_output = ""
+        full_output += capture_output(alerts.check_all_alerts)
+        full_output += "\n" + capture_output(alerts.check_new_alerts)
+        self._render_alerts(full_output)
 
         # ── Capture new alerts for sidebar badge ─────────────────────────
         new_output = capture_output(alerts.check_new_alerts)

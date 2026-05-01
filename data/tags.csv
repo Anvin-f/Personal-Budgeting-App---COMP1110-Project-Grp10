@@ -1,3 +1,9 @@
 Tag_id,Tag_type,Tag_name
 1,Needs,Food
 2,Needs,Transport
+3,Bills,Utilities
+4,Wants,Entertainment
+5,Wants,Shopping
+6,Wants,Dining Out
+7,Needs,Healthcare
+8,Balance,Peer:John

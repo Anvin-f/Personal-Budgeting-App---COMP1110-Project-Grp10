@@ -9,7 +9,7 @@ import Backend.settings as app_settings
 import Backend.transaction as transaction
 
 from ..base import Page
-from ..constants import ACCENT, BG, BORDER, DANGER, MUTED, FONT, FONT_H, SUCCESS, TEXT, FONT_FAMILY
+from ..constants import ACCENT, BG, BORDER, DANGER, MUTED, FONT, FONT_H, SUCCESS, TEXT, FONT_FAMILY, CARD
 from ..helpers import button, card, repaint_tree, safe_float, safe_read_tags, zebra, bind_tree_sort
 
 
@@ -544,6 +544,16 @@ class TransactionsPage(Page):
                 if not required.issubset(columns):
                     return f"[Error] Missing columns: {required - columns}"
                 has_tag_columns = "Tag_type" in columns and "Tag_name" in columns
+
+                # Build a lookup from existing tag_name -> tag_type to fill missing types
+                existing_tags = transaction._load_tags()
+                name_to_type = {}
+                for t in existing_tags:
+                    name = (t.get("Tag_name") or "").strip().lower()
+                    ttype = (t.get("Tag_type") or "").strip()
+                    if name and name not in name_to_type:
+                        name_to_type[name] = ttype
+
                 for row in reader:
                     date_value = row.get("Date", "").strip()
                     name = row.get("Name", "").strip()
@@ -551,6 +561,13 @@ class TransactionsPage(Page):
                     amount = row.get("Amount", "").strip()
                     tag_type = row.get("Tag_type", "").strip() if has_tag_columns else ""
                     tag_name = row.get("Tag_name", "").strip() if has_tag_columns else ""
+
+                    # Fill missing tag_type from existing tags if tag_name is known
+                    if not tag_type and tag_name:
+                        lower_name = tag_name.lower()
+                        if lower_name in name_to_type:
+                            tag_type = name_to_type[lower_name]
+
                     if not transaction._validate_date(date_value):
                         continue
                     if not name:
@@ -775,7 +792,9 @@ class AddPeerBalanceDialog(tk.Toplevel):
             anchor="w",
         ).pack(fill="x", pady=(10, 3))
         peer_options = self._build_peer_options()
-        self.peer_combo = ttk.Combobox(form, textvariable=self.peer_var, values=peer_options, font=FONT)
+        style = ttk.Style()
+        style.configure("Peer.TCombobox", foreground=TEXT, fieldbackground=CARD)
+        self.peer_combo = ttk.Combobox(form, textvariable=self.peer_var, values=peer_options, font=FONT, style="Peer.TCombobox")
         self.peer_combo.pack(fill="x", ipady=5)
         self.peer_combo.bind("<<ComboboxSelected>>", self._on_peer_change)
         self.peer_combo.bind("<FocusOut>", self._on_peer_change)

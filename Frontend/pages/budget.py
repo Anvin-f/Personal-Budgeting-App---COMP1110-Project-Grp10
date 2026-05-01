@@ -379,11 +379,13 @@ class AddBudgetDialog(tk.Toplevel):
         super().__init__(parent)
         self.on_save = on_save
         self.title("Add / Update Budget")
-        self.geometry("400x310")
+        self.geometry("400x400")                     # taller to show buttons safely
         self.configure(bg=BG)
-        self.resizable(False, False)
+        self.resizable(True, True)
+        self.minsize(360, 350)
         self.grab_set()
 
+        # ── Header ─────────────────────────────────────────────────────
         tk.Label(self, text="Add / Update Budget", bg=BG, fg=TEXT, font=FONT_H).pack(
             anchor="w",
             padx=28,
@@ -391,6 +393,7 @@ class AddBudgetDialog(tk.Toplevel):
         )
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", padx=28, pady=(0, 12))
 
+        # ── Form fields ────────────────────────────────────────────────
         form = tk.Frame(self, bg=BG)
         form.pack(padx=28, fill="x")
 
@@ -436,10 +439,28 @@ class AddBudgetDialog(tk.Toplevel):
         self.amount_var = tk.StringVar()
         tk.Entry(form, textvariable=self.amount_var, font=FONT, relief="solid", bd=1).pack(fill="x", ipady=5)
 
+        # ── Save / Cancel buttons (placed at bottom) ───────────────────
         button_row = tk.Frame(self, bg=BG)
-        button_row.pack(pady=22)
-        button(button_row, "Save Budget", self._save, SUCCESS, pady=10).pack(side="left", padx=6)
-        button(button_row, "Cancel", self.destroy, DANGER, pady=10).pack(side="left", padx=6)
+        button_row.pack(side="bottom", fill="x", pady=(10, 20))
+
+        # Use tk.Button directly to avoid keyword conflict with helpers.button
+        tk.Button(
+            button_row, text="Save Budget", command=self._save,
+            bg=SUCCESS, fg="white",
+            font=(FONT_FAMILY, 10, "bold"),
+            bd=0, cursor="hand2",
+            activebackground=SUCCESS, activeforeground="white",
+            relief="flat", padx=14, pady=10,
+        ).pack(side="left", padx=6)
+
+        tk.Button(
+            button_row, text="Cancel", command=self.destroy,
+            bg=DANGER, fg="white",
+            font=(FONT_FAMILY, 10, "bold"),
+            bd=0, cursor="hand2",
+            activebackground=DANGER, activeforeground="white",
+            relief="flat", padx=14, pady=10,
+        ).pack(side="left", padx=6)
 
     def _save(self):
         selection = self.tag_combo.get()
